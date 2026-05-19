@@ -1,0 +1,25 @@
+{
+  "name": "mili-reports",
+  "version": "0.1.0",
+  "description": "Generador de reports de obra para Mili Construcciones",
+  "private": true,
+  "scripts": {
+    "dev": "node server/index.js",
+    "start": "NODE_ENV=production node server/index.js",
+    "install:playwright": "playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.44.0",
+    "express": "^4.19.0",
+    "multer": "^1.4.5",
+    "dotenv": "^16.4.0",
+    "@anthropic-ai/sdk": "^0.24.0",
+    "axios": "^1.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

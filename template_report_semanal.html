@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report Semanal — {{OBRA_NOMBRE}}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "DM Sans", sans-serif;
+    background: #f5f3ef;
+    color: #1a1a18;
+    padding: 2rem;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    border-bottom: 2px solid #1a1a18;
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .brand-name {
+    font-family: "DM Serif Display", serif;
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .brand-sub {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #7a7a72;
+    margin-top: 0.2rem;
+  }
+  .report-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #7a7a72;
+    margin-bottom: 0.3rem;
+    text-align: right;
+  }
+  .report-date {
+    font-family: "DM Serif Display", serif;
+    font-size: 1.1rem;
+    text-align: right;
+  }
+
+  /* ── OBRA INFO ── */
+  .obra-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border: 1.5px solid #1a1a18;
+    margin-bottom: 2rem;
+  }
+  .obra-field {
+    padding: 0.9rem 1.2rem;
+    border-right: 1.5px solid #1a1a18;
+  }
+  .obra-field:last-child { border-right: none; }
+  .obra-field-label {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #7a7a72;
+    margin-bottom: 0.3rem;
+  }
+  .obra-field-value { font-size: 0.9rem; font-weight: 500; }
+
+  /* ── ESTADO ── */
+  .estado-section {
+    background: #1a1a18;
+    color: #f5f3ef;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  .estado-label {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #9a9a8a;
+    white-space: nowrap;
+  }
+  .estado-text {
+    font-family: "DM Serif Display", serif;
+    font-size: 1rem;
+    font-style: italic;
+    color: #f5f3ef;
+    line-height: 1.4;
+  }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom: 2.5rem; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid #d0cdc7;
+  }
+  .section-number { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; color: #aaa; }
+  .section-title {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #1a1a18;
+  }
+
+  /* ── RESUMEN ── */
+  .resumen-text {
+    font-size: 0.95rem;
+    line-height: 1.75;
+    color: #3a3a35;
+    font-weight: 300;
+    max-width: 680px;
+  }
+
+  /* ── TABLA DE TRABAJOS ── */
+  .trabajos-table { width: 100%; border-collapse: collapse; }
+  .trabajos-table thead tr { border-bottom: 1.5px solid #1a1a18; }
+  .trabajos-table th {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #7a7a72;
+    padding: 0.5rem 0.8rem 0.7rem;
+    text-align: left;
+  }
+  .trabajos-table td {
+    padding: 1rem 0.8rem;
+    font-size: 0.85rem;
+    vertical-align: top;
+    border-bottom: 1px solid #e0ddd7;
+    line-height: 1.55;
+    color: #2a2a25;
+  }
+  .trabajos-table tr:last-child td { border-bottom: none; }
+  .td-num {
+    font-family: "DM Serif Display", serif;
+    font-size: 1.3rem;
+    color: #d0cdc7;
+    width: 40px;
+    padding-top: 0.9rem;
+  }
+  .td-fecha { width: 90px; font-size: 0.8rem; color: #7a7a72; font-weight: 500; }
+  .td-descripcion { font-weight: 300; }
+  .td-operarios { width: 150px; font-size: 0.78rem; color: #5a5a52; }
+  .op-badge {
+    display: inline-block;
+    background: #e8e5df;
+    border-radius: 2px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    margin: 0.1rem 0.1rem 0.1rem 0;
+    white-space: nowrap;
+  }
+  .op-badge.enc { background: #1a1a18; color: #f5f3ef; }
+  .op-sub { font-size: 0.7rem; color: #9a9a8a; margin-top: 0.3rem; display: block; }
+
+  /* ── GRID FOTOS ── */
+  .fotos-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.6rem;
+  }
+  .foto-item {
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    background: #e8e5df;
+    border: 1px solid #d0cdc7;
+  }
+  .foto-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #1a1a18;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+  }
+  .footer-firma {
+    font-family: "DM Serif Display", serif;
+    font-size: 1.4rem;
+    font-style: italic;
+    color: #1a1a18;
+    margin-bottom: 0.2rem;
+  }
+  .footer-cargo {
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #7a7a72;
+  }
+  .footer-info { font-size: 0.72rem; color: #aaa; line-height: 1.7; text-align: right; }
+
+  @media print {
+    body { padding: 1rem; }
+    .footer { margin-top: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="brand-name">Mili Construcciones</div>
+    <div class="brand-sub">Dirección y ejecución de obras</div>
+  </div>
+  <div>
+    <div class="report-label">Report semanal</div>
+    <div class="report-date">{{FECHA_REPORT}}</div>
+  </div>
+</div>
+
+<div class="obra-info">
+  <div class="obra-field">
+    <div class="obra-field-label">Obra</div>
+    <div class="obra-field-value">{{OBRA_NOMBRE}}</div>
+  </div>
+  <div class="obra-field">
+    <div class="obra-field-label">Semana</div>
+    <div class="obra-field-value">{{SEMANA_RANGO}}</div>
+  </div>
+  <div class="obra-field">
+    <div class="obra-field-label">Encargado</div>
+    <div class="obra-field-value">{{ENCARGADO}}</div>
+  </div>
+</div>
+
+<div class="estado-section">
+  <div class="estado-label">Estado</div>
+  <div class="estado-text">{{ESTADO_TEXTO}}</div>
+</div>
+
+<!-- 01 RESUMEN EJECUTIVO -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-number">01</span>
+    <span class="section-title">Resumen ejecutivo</span>
+  </div>
+  <p class="resumen-text">{{RESUMEN_EJECUTIVO}}</p>
+</div>
+
+<!-- 02 TRABAJOS REALIZADOS -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-number">02</span>
+    <span class="section-title">Trabajos realizados</span>
+  </div>
+  <table class="trabajos-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Fecha</th>
+        <th>Descripción</th>
+        <th>Operarios</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Ejemplo de fila — repetir por cada entrada -->
+      <tr>
+        <td class="td-num">1</td>
+        <td class="td-fecha">{{FECHA}}</td>
+        <td class="td-descripcion">{{DESCRIPCION}}</td>
+        <td class="td-operarios">
+          <span class="op-badge enc">{{ENCARGADO}}</span>
+          <span class="op-badge">{{OPERARIO_1}}</span>
+          <span class="op-badge">{{OPERARIO_2}}</span>
+          <span class="op-sub">{{NUM_OP}} op. · {{HORAS}}h</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 03 FOTOGRAFÍAS DEL PROCESO -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-number">03</span>
+    <span class="section-title">Fotografías del proceso</span>
+  </div>
+  <div class="fotos-grid">
+    <!-- Inyectar con: <div class="foto-item"><img src="data:image/jpeg;base64,BASE64_DATA" alt="Obra"></div> -->
+    {{FOTOS_GRID}}
+  </div>
+</div>
+
+<div class="footer">
+  <div>
+    <div class="footer-firma">Mili —</div>
+    <div class="footer-cargo">Jefa de obra · Autónoma</div>
+  </div>
+  <div class="footer-info">
+    Report generado el {{FECHA_GENERACION}}<br>
+    Obra: {{OBRA_NOMBRE}} · Semana {{NUM_SEMANA}}
+  </div>
+</div>
+
+</body>
+</html>

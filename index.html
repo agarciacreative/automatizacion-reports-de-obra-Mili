@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mili Construcciones — Generador de Reports</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f5f3ef;
+    --cream2: #edeae4;
+    --cream3: #e4e0d8;
+    --navy: #1a1a18;
+    --navy2: #2a2a25;
+    --mid: #6b6860;
+    --light: #a09d98;
+    --border: #d0cdc7;
+    --border2: #b8b4ae;
+    --white: #ffffff;
+    --accent: #1a1a18;
+    --green: #3B6D11;
+    --green-bg: #EAF3DE;
+    --amber: #854F0B;
+    --amber-bg: #FAEEDA;
+    --red: #791F1F;
+    --red-bg: #FDF3F3;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "DM Sans", sans-serif;
+    background: var(--cream);
+    color: var(--navy);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── TOP NAV ── */
+  .topnav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(245,243,239,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2.5rem;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-brand {
+    font-family: "DM Serif Display", serif;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+  }
+  .nav-brand span { font-style: italic; }
+  .nav-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .nav-step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--light);
+    cursor: pointer;
+    transition: color 0.2s;
+    border-right: 1px solid var(--border);
+  }
+  .nav-step:last-child { border-right: none; }
+  .nav-step.active { color: var(--navy); }
+  .nav-step.done { color: var(--green); }
+  .step-num {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--cream3);
+    font-size: 0.65rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .nav-step.active .step-num { background: var(--navy); color: var(--cream); }
+  .nav-step.done .step-num { background: var(--green); color: white; }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    padding-top: 60px;
+    min-height: 100vh;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none;
+    min-height: calc(100vh - 60px);
+    animation: fadeIn 0.35s ease;
+  }
+  .screen.active { display: flex; flex-direction: column; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SCREEN 1: DATOS ── */
+  .s1-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: calc(100vh - 60px);
+  }
+  .s1-left {
+    padding: 3rem 3.5rem;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+  .s1-right {
+    padding: 3rem 3.5rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen-eyebrow {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--light);
+    margin-bottom: 0.6rem;
+  }
+  .screen-title {
+    font-family: "DM Serif Display", serif;
+    font-size: 1.8rem;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.4rem;
+  }
+  .screen-title em { font-style: italic; }
+  .screen-sub {
+    font-size: 0.85rem;
+    color: var(--mid);
+    font-weight: 300;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+
+  /* FORM */
+  .form-group { margin-bottom: 1.2rem; }
+  .form-label {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 0.4rem;
+  }
+  .form-input {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.88rem;
+    color: var(--navy);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--navy); }
+  .form-input::placeholder { color: var(--light); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+  .form-select {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.88rem;
+    color: var(--navy);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6860' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+  }
+  .form-select:focus { border-color: var(--navy); }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1.5rem 0;
+  }
+
+  /* ── DROP ZONES ── */
+  .drop-section-title {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 0.8rem;
+  }
+
+  .drop-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: 6px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--white);
+    position: relative;
+    margin-bottom: 1rem;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--navy);
+    background: var(--cream2);
+  }
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .drop-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .drop-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--navy);
+    margin-bottom: 0.2rem;
+  }
+  .drop-sub {
+    font-size: 0.75rem;
+    color: var(--light);
+    font-weight: 300;
+  }
+
+  /* PARTES PREVIEW */
+  .partes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.8rem;
+  }
+  .parte-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.7rem;
+    background: var(--green-bg);
+    border: 1px solid rgba(59,109,17,0.2);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: var(--green);
+    font-weight: 400;
+  }
+  .parte-item-remove {
+    margin-left: auto;
+    cursor: pointer;
+    color: var(--light);
+    font-size: 0.75rem;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .parte-item-remove:hover { color: var(--red); }
+
+  /* FOTOS GRID PREVIEW */
+  .fotos-preview {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    margin-top: 0.8rem;
+  }
+  .foto-thumb {
+    aspect-ratio: 4/3;
+    background: var(--cream3);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .foto-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .foto-thumb-remove {
+    position: absolute;
+    top: 3px; right: 3px;
+    width: 18px; height: 18px;
+    background: rgba(26,26,24,0.7);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .foto-thumb:hover .foto-thumb-remove { opacity: 1; }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem 1.6rem;
+    background: var(--navy);
+    color: var(--cream);
+    border: none;
+    border-radius: 4px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { background: var(--navy2); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem 1.6rem;
+    background: transparent;
+    color: var(--navy);
+    border: 1.5px solid var(--navy);
+    border-radius: 4px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { background: var(--cream2); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: transparent;
+    color: var(--mid);
+    border: none;
+    border-radius: 4px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .btn-ghost:hover { color: var(--navy); }
+
+  .btn-row {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: auto;
+    padding-top: 2rem;
+  }
+
+  /* ── SCREEN 2: PROCESANDO ── */
+  .s2-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 4rem;
+  }
+  .processing-icon {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    position: relative;
+  }
+  .processing-icon::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid var(--navy);
+    border-top-color: transparent;
+    animation: spin 1.2s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .processing-title {
+    font-family: "DM Serif Display", serif;
+    font-size: 1.6rem;
+    text-align: center;
+  }
+  .processing-title em { font-style: italic; }
+  .processing-sub {
+    font-size: 0.85rem;
+    color: var(--mid);
+    text-align: center;
+    font-weight: 300;
+    max-width: 360px;
+    line-height: 1.7;
+  }
+
+  .steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    max-width: 400px;
+  }
+  .proc-step {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 1.2rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--light);
+    transition: all 0.3s;
+    position: relative;
+  }
+  .proc-step.doing { color: var(--navy); font-weight: 500; background: var(--cream2); }
+  .proc-step.done-step { color: var(--green); }
+  .proc-step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--cream3);
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+  .proc-step.doing .proc-step-dot { background: var(--navy); animation: pulse 1s ease infinite; }
+  .proc-step.done-step .proc-step-dot { background: var(--green); }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── SCREEN 3: PREVIEW ── */
+  .s3-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    min-height: calc(100vh - 60px);
+  }
+  .s3-sidebar {
+    border-right: 1px solid var(--border);
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    overflow-y: auto;
+  }
+  .s3-preview {
+    background: var(--cream3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+
+  /* REPORT PREVIEW CARD */
+  .report-card {
+    background: var(--cream);
+    width: 100%;
+    max-width: 560px;
+    min-height: 720px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+    padding: 1.8rem;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .rc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1.5px solid var(--navy);
+    padding-bottom: 0.8rem;
+    margin-bottom: 1rem;
+  }
+  .rc-brand { font-family: "DM Serif Display", serif; font-size: 1.1rem; line-height: 1; }
+  .rc-brand-sub { font-size: 0.55rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mid); margin-top: 0.2rem; }
+  .rc-label { font-size: 0.55rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--mid); text-align: right; }
+  .rc-date { font-family: "DM Serif Display", serif; font-size: 0.8rem; text-align: right; }
+  .rc-meta { display: grid; grid-template-columns: 1fr 1fr 1fr; border: 1px solid var(--navy); margin-bottom: 0.8rem; font-size: 10px; }
+  .rc-meta-field { padding: 0.5rem 0.7rem; border-right: 1px solid var(--border); }
+  .rc-meta-field:last-child { border-right: none; }
+  .rc-meta-label { font-size: 0.5rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mid); margin-bottom: 0.15rem; }
+  .rc-meta-val { font-size: 0.72rem; font-weight: 500; }
+  .rc-estado { background: var(--navy); color: var(--cream); padding: 0.6rem 0.9rem; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.8rem; }
+  .rc-estado-label { font-size: 0.48rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #9a9a8a; white-space: nowrap; }
+  .rc-estado-text { font-family: "DM Serif Display", serif; font-size: 0.72rem; font-style: italic; color: var(--cream); line-height: 1.3; }
+  .rc-section { margin-bottom: 0.9rem; }
+  .rc-section-hdr { display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); margin-bottom: 0.5rem; }
+  .rc-section-num { font-size: 0.5rem; font-weight: 600; letter-spacing: 0.1em; color: var(--light); }
+  .rc-section-title { font-size: 0.52rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--navy); }
+  .rc-resumen { font-size: 0.7rem; line-height: 1.6; color: #3a3a35; font-weight: 300; }
+  .rc-table { width: 100%; border-collapse: collapse; font-size: 0.65rem; }
+  .rc-table thead tr { border-bottom: 1px solid var(--navy); }
+  .rc-table th { font-size: 0.48rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mid); padding: 0.3rem 0.5rem; text-align: left; }
+  .rc-table td { padding: 0.5rem; border-bottom: 1px solid #e8e5e0; vertical-align: top; line-height: 1.4; }
+  .rc-table tr:last-child td { border-bottom: none; }
+  .rc-td-num { font-family: "DM Serif Display", serif; font-size: 0.9rem; color: var(--border); width: 20px; }
+  .rc-td-fecha { color: var(--mid); width: 50px; }
+  .rc-fotos { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.3rem; }
+  .rc-foto { aspect-ratio: 4/3; background: var(--cream3); overflow: hidden; }
+  .rc-foto img { width: 100%; height: 100%; object-fit: cover; }
+  .rc-footer { margin-top: 1rem; padding-top: 0.8rem; border-top: 1.5px solid var(--navy); display: flex; justify-content: space-between; align-items: flex-end; }
+  .rc-firma { font-family: "DM Serif Display", serif; font-size: 0.9rem; font-style: italic; }
+  .rc-cargo { font-size: 0.48rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mid); margin-top: 0.1rem; }
+  .rc-footer-info { font-size: 0.55rem; color: var(--light); text-align: right; line-height: 1.6; }
+
+  /* SIDEBAR CARDS */
+  .info-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.1rem;
+  }
+  .info-card-title {
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 0.6rem;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0;
+    font-size: 0.82rem;
+    border-bottom: 1px solid var(--cream2);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-row-label { color: var(--mid); font-weight: 300; }
+  .info-row-val { font-weight: 500; }
+
+  .status-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+  }
+  .badge-ok { background: var(--green-bg); color: var(--green); }
+  .badge-warn { background: var(--amber-bg); color: var(--amber); }
+
+  .action-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.8rem 1rem;
+    background: var(--navy);
+    color: var(--cream);
+    border: none;
+    border-radius: 4px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .action-btn:hover { background: var(--navy2); }
+  .action-btn.outline {
+    background: transparent;
+    color: var(--navy);
+    border: 1.5px solid var(--navy);
+  }
+  .action-btn.outline:hover { background: var(--cream2); }
+  .action-btn .action-icon { font-size: 1rem; flex-shrink: 0; }
+  .action-btn .action-text { flex: 1; }
+  .action-btn .action-sub { font-size: 0.7rem; font-weight: 300; opacity: 0.7; display: block; margin-top: 0.05rem; }
+
+  /* EDITABLE FIELDS */
+  .edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.6rem;
+  }
+  .edit-label {
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mid);
+  }
+  .edit-input {
+    padding: 0.5rem 0.7rem;
+    background: var(--cream2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.82rem;
+    color: var(--navy);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .edit-input:focus { border-color: var(--navy); background: var(--white); }
+  .edit-textarea {
+    padding: 0.5rem 0.7rem;
+    background: var(--cream2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.82rem;
+    color: var(--navy);
+    outline: none;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.2s;
+  }
+  .edit-textarea:focus { border-color: var(--navy); background: var(--white); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,26,24,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .modal {
+    background: var(--cream);
+    border: 1.5px solid var(--navy);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 480px;
+    padding: 2rem;
+    transform: translateY(12px);
+    transition: transform 0.25s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .modal-title {
+    font-family: "DM Serif Display", serif;
+    font-size: 1.3rem;
+    line-height: 1.2;
+  }
+  .modal-title em { font-style: italic; }
+  .modal-close {
+    width: 28px; height: 28px;
+    background: var(--cream2);
+    border: none;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mid);
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .modal-close:hover { background: var(--cream3); color: var(--navy); }
+  .modal-body { display: flex; flex-direction: column; gap: 1rem; }
+  .modal-footer {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--navy);
+    color: var(--cream);
+    padding: 0.7rem 1.4rem;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 200;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="topnav">
+  <div class="nav-brand">Mili <span>Construcciones</span></div>
+  <div class="nav-steps">
+    <div class="nav-step active" id="nav-1" onclick="goTo(1)">
+      <div class="step-num">1</div>
+      Datos y archivos
+    </div>
+    <div class="nav-step" id="nav-2">
+      <div class="step-num">2</div>
+      Procesando
+    </div>
+    <div class="nav-step" id="nav-3" onclick="if(currentScreen>=3) goTo(3)">
+      <div class="step-num">3</div>
+      Report listo
+    </div>
+  </div>
+</nav>
+
+<main class="main">
+
+  <!-- ══ SCREEN 1: DATOS ══ -->
+  <div class="screen active" id="screen-1">
+    <div class="s1-layout">
+
+      <!-- LEFT: DATOS DE OBRA -->
+      <div class="s1-left">
+        <div class="screen-eyebrow">Paso 1 de 3</div>
+        <h1 class="screen-title">Datos de <em>la obra</em></h1>
+        <p class="screen-sub">Rellena la información de la semana. Los campos se usarán para generar la cabecera del report.</p>
+
+        <div class="form-group">
+          <label class="form-label">Nombre de la obra</label>
+          <select class="form-select" id="obra-nombre">
+            <option value="">Seleccionar obra…</option>
+            <option value="Rancho Manolo" selected>Rancho Manolo</option>
+            <option value="Molino 2">Molino 2</option>
+            <option value="nueva">+ Nueva obra…</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Fecha inicio semana</label>
+            <input type="date" class="form-input" id="fecha-inicio" value="2026-05-11">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha fin semana</label>
+            <input type="date" class="form-input" id="fecha-fin" value="2026-05-17">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Jefe de obra</label>
+          <select class="form-select" id="encargado">
+            <option value="Domingo" selected>Domingo — Jefe de obra</option>
+          </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="form-group">
+          <label class="form-label">Tipo de documento</label>
+          <div style="display:flex;gap:0.6rem;">
+            <label style="flex:1;display:flex;align-items:center;gap:0.5rem;padding:0.7rem 0.9rem;background:var(--navy);color:var(--cream);border-radius:4px;cursor:pointer;font-size:0.82rem;font-weight:500;">
+              <input type="radio" name="tipo-doc" value="report" checked style="accent-color:var(--cream);"> Report semanal
+            </label>
+            <label style="flex:1;display:flex;align-items:center;gap:0.5rem;padding:0.7rem 0.9rem;background:var(--white);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:0.82rem;">
+              <input type="radio" name="tipo-doc" value="acta" style="accent-color:var(--navy);"> Acta técnica
+            </label>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-primary" onclick="goTo(2)">
+            Continuar →
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT: ARCHIVOS -->
+      <div class="s1-right">
+        <div class="screen-eyebrow">Archivos</div>
+        <h2 class="screen-title" style="font-size:1.4rem;">Sube los <em>partes y fotos</em></h2>
+        <p class="screen-sub">Los partes escritos de Domingo para extraer los trabajos. Las fotos de obra para el grid del report.</p>
+
+        <!-- PARTES DROP -->
+        <div class="drop-section-title">Partes de obra (fotos del parte escrito)</div>
+        <div class="drop-zone" id="drop-partes">
+          <input type="file" accept="image/*" multiple onchange="addPartes(this.files)">
+          <span class="drop-icon">📋</span>
+          <div class="drop-title">Arrastra los partes aquí</div>
+          <div class="drop-sub">Fotos de los partes escritos a mano de Domingo</div>
+        </div>
+        <div class="partes-list" id="partes-list"></div>
+
+        <div class="divider"></div>
+
+        <!-- FOTOS DROP -->
+        <div class="drop-section-title">Fotografías de obra</div>
+        <div class="drop-zone" id="drop-fotos">
+          <input type="file" accept="image/*" multiple onchange="addFotos(this.files)">
+          <span class="drop-icon">📷</span>
+          <div class="drop-title">Arrastra las fotos de obra</div>
+          <div class="drop-sub">Solo fotos del proceso — no los partes escritos</div>
+        </div>
+        <div class="fotos-preview" id="fotos-preview"></div>
+
+        <div style="margin-top:auto;padding-top:1.5rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--mid);">
+            <span id="counter-partes" style="font-weight:500;color:var(--navy);">0</span> partes ·
+            <span id="counter-fotos" style="font-weight:500;color:var(--navy);">0</span> fotos de obra
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 2: PROCESANDO ══ -->
+  <div class="screen" id="screen-2">
+    <div class="s2-wrap">
+      <div class="processing-icon">🤖</div>
+      <div>
+        <h2 class="processing-title">Generando el <em>report…</em></h2>
+      </div>
+      <p class="processing-sub">La IA está leyendo los partes, extrayendo los trabajos y redactando el resumen ejecutivo.</p>
+
+      <div class="steps-list">
+        <div class="proc-step doing" id="proc-1">
+          <div class="proc-step-dot"></div>
+          Leyendo partes con OCR…
+        </div>
+        <div class="proc-step" id="proc-2">
+          <div class="proc-step-dot"></div>
+          Extrayendo trabajos y operarios…
+        </div>
+        <div class="proc-step" id="proc-3">
+          <div class="proc-step-dot"></div>
+          Redactando resumen ejecutivo…
+        </div>
+        <div class="proc-step" id="proc-4">
+          <div class="proc-step-dot"></div>
+          Componiendo plantilla con fotos…
+        </div>
+        <div class="proc-step" id="proc-5">
+          <div class="proc-step-dot"></div>
+          Generando PDF final…
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 3: PREVIEW ══ -->
+  <div class="screen" id="screen-3">
+    <div class="s3-layout">
+
+      <!-- SIDEBAR -->
+      <div class="s3-sidebar">
+        <div>
+          <div class="screen-eyebrow">Report listo</div>
+          <h2 class="screen-title" style="font-size:1.4rem;margin-bottom:1rem;"><em>Revisa</em> y descarga</h2>
+        </div>
+
+        <!-- RESUMEN INFO -->
+        <div class="info-card">
+          <div class="info-card-title">Resumen del report</div>
+          <div class="info-row"><span class="info-row-label">Obra</span><span class="info-row-val">Rancho Manolo</span></div>
+          <div class="info-row"><span class="info-row-label">Semana</span><span class="info-row-val">11–17 mayo 2026</span></div>
+          <div class="info-row"><span class="info-row-label">Entradas</span><span class="info-row-val">4 jornadas</span></div>
+          <div class="info-row"><span class="info-row-label">Fotos</span><span class="info-row-val">9 fotografías</span></div>
+          <div class="info-row"><span class="info-row-label">Estado OCR</span><span class="info-row-val"><span class="status-badge badge-ok">✓ Confianza alta</span></span></div>
+        </div>
+
+        <!-- EDITAR -->
+        <div class="info-card">
+          <div class="info-card-title">Ajustes rápidos</div>
+          <div class="edit-field">
+            <div class="edit-label">Estado de la obra</div>
+            <input class="edit-input" value="Hormigonado de solera P.P. y limpieza piscina en ejecución." oninput="updateEstado(this.value)">
+          </div>
+          <div class="edit-field">
+            <div class="edit-label">Nota adicional</div>
+            <textarea class="edit-textarea" placeholder="Añadir observación opcional…"></textarea>
+          </div>
+        </div>
+
+        <!-- ACCIONES -->
+        <div class="info-card">
+          <div class="info-card-title">Acciones</div>
+          <div class="action-list">
+            <button class="action-btn" onclick="showToast('📄 Descargando PDF…')">
+              <span class="action-icon">⬇️</span>
+              <div class="action-text">
+                Descargar PDF
+                <span class="action-sub">report_rancho_manolo_semana20.pdf</span>
+              </div>
+            </button>
+            <button class="action-btn outline" onclick="showToast('☁️ Subiendo a OneDrive…')">
+              <span class="action-icon">☁️</span>
+              <div class="action-text">
+                Guardar en OneDrive
+                <span class="action-sub">Rancho Manolo › Semana 20</span>
+              </div>
+            </button>
+            <button class="action-btn outline" onclick="showToast('📱 Enviando enlace por WhatsApp…')">
+              <span class="action-icon">📱</span>
+              <div class="action-text">
+                Enviar enlace a Mili
+                <span class="action-sub">Notificación por WhatsApp</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top:auto;">
+          <button class="btn-ghost" onclick="goTo(1)">← Nuevo report</button>
+        </div>
+      </div>
+
+      <!-- REPORT PREVIEW -->
+      <div class="s3-preview">
+        <div class="report-card">
+          <div class="rc-header">
+            <div>
+              <div class="rc-brand">Mili Construcciones</div>
+              <div class="rc-brand-sub">Dirección y ejecución de obras</div>
+            </div>
+            <div>
+              <div class="rc-label">Report semanal</div>
+              <div class="rc-date">18 mayo 2026</div>
+            </div>
+          </div>
+
+          <div class="rc-meta">
+            <div class="rc-meta-field"><div class="rc-meta-label">Obra</div><div class="rc-meta-val">Rancho Manolo</div></div>
+            <div class="rc-meta-field"><div class="rc-meta-label">Semana</div><div class="rc-meta-val">11 – 17 mayo 2026</div></div>
+            <div class="rc-meta-field"><div class="rc-meta-label">Jefe de obra</div><div class="rc-meta-val">Domingo</div></div>
+          </div>
+
+          <div class="rc-estado">
+            <div class="rc-estado-label">Estado</div>
+            <div class="rc-estado-text" id="preview-estado">Hormigonado de solera P.P. y limpieza piscina en ejecución.</div>
+          </div>
+
+          <div class="rc-section">
+            <div class="rc-section-hdr">
+              <span class="rc-section-num">01</span>
+              <span class="rc-section-title">Resumen ejecutivo</span>
+            </div>
+            <p class="rc-resumen">Durante la semana del 11 al 17 de mayo el equipo ha llevado a cabo trabajos intensivos de estructura, drenaje y hormigonado. El día 11 se ejecutó la excavación en zona de garaje, nivelación, zanjas de drenaje fecal, encofrado y hormigonado de pilar P.P. con apoyo al herrero para montaje de andamio y colocación de jácena. El día 12 se montó el tubo de drenaje con tapado de grava, tela y tierra, y se colocó el mallazo y encofrado. El día 13 se hormigonó la solera de P.P. y se limpió la zona de piscina.</p>
+          </div>
+
+          <div class="rc-section">
+            <div class="rc-section-hdr">
+              <span class="rc-section-num">02</span>
+              <span class="rc-section-title">Trabajos realizados</span>
+            </div>
+            <table class="rc-table">
+              <thead><tr><th></th><th>Fecha</th><th>Descripción</th><th>Op.</th></tr></thead>
+              <tbody>
+                <tr><td class="rc-td-num">1</td><td class="rc-td-fecha">11 may</td><td>Excavación garaje, zanjas drenaje fecal, encofrado y hormigonado pilar P.P. Apoyo herrero.</td><td>4 op.</td></tr>
+                <tr><td class="rc-td-num">2</td><td class="rc-td-fecha">12 may</td><td>Drenaje 2 tiradas con grava/tela/tierra. Apuntalar P.B., mallazo y encofrado. Desencofrar pilar.</td><td>3 op.</td></tr>
+                <tr><td class="rc-td-num">3</td><td class="rc-td-fecha">13 may</td><td>Hormigón solera P.P. Limpieza piscina. Apuntalar, encofrar pilar, encamillar, marcar zona nueva.</td><td>4 op.</td></tr>
+                <tr><td class="rc-td-num">4</td><td class="rc-td-fecha">14 may</td><td>Jardinera junto silo. Hormigonado pilar 3, medidas zona nueva, encamillar, picar con compresor.</td><td>3 op.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="rc-section">
+            <div class="rc-section-hdr">
+              <span class="rc-section-num">03</span>
+              <span class="rc-section-title">Fotografías del proceso</span>
+            </div>
+            <div class="rc-fotos" id="rc-fotos-grid">
+              <!-- filled by JS or placeholders -->
+              <div class="rc-foto" style="background:#d8d4cc;"></div>
+              <div class="rc-foto" style="background:#ccc9c0;"></div>
+              <div class="rc-foto" style="background:#d0cdc6;"></div>
+              <div class="rc-foto" style="background:#c8c4bc;"></div>
+              <div class="rc-foto" style="background:#d4d0c8;"></div>
+              <div class="rc-foto" style="background:#ccc8bf;"></div>
+            </div>
+          </div>
+
+          <div class="rc-footer">
+            <div>
+              <div class="rc-firma">Mili —</div>
+              <div class="rc-cargo">Gerente · Mili Construcciones</div>
+            </div>
+            <div class="rc-footer-info">
+              Report generado el 18/05/2026<br>
+              Obra: Rancho Manolo · Semana 20
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL NUEVA OBRA -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div style="font-size:0.6rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--mid);margin-bottom:0.3rem;">Nueva obra</div>
+        <div class="modal-title">Crear <em>obra nueva</em></div>
+      </div>
+      <button class="modal-close" onclick="closeModalBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Nombre de la obra *</label>
+        <input type="text" class="form-input" id="nueva-obra-nombre" placeholder="Ej: Casa Tramuntana" autofocus>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Dirección</label>
+        <input type="text" class="form-input" id="nueva-obra-direccion" placeholder="Calle, número, municipio">
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Promotor / Cliente</label>
+          <input type="text" class="form-input" id="nueva-obra-promotor" placeholder="Nombre del cliente">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Tipo de obra</label>
+          <select class="form-select" id="nueva-obra-tipo">
+            <option value="reforma">Reforma integral</option>
+            <option value="nueva">Obra nueva</option>
+            <option value="rehabilitacion">Rehabilitación</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Arquitecto</label>
+        <input type="text" class="form-input" id="nueva-obra-arquitecto" placeholder="Bernat Parera" value="Bernat Parera">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModalBtn()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarObra()">Crear obra →</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let currentScreen = 1;
+  let partes = [];
+  let fotos = [];
+
+  function goTo(n) {
+    if (n === currentScreen) return;
+
+    // Update screens
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + n).classList.add('active');
+
+    // Update nav
+    document.querySelectorAll('.nav-step').forEach((s, i) => {
+      s.classList.remove('active', 'done');
+      if (i + 1 < n) s.classList.add('done');
+      if (i + 1 === n) s.classList.add('active');
+    });
+
+    currentScreen = n;
+
+    if (n === 2) runProcessing();
+  }
+
+  // ── PROCESSING SIMULATION ──
+  function runProcessing() {
+    const steps = ['proc-1','proc-2','proc-3','proc-4','proc-5'];
+    let i = 0;
+
+    function next() {
+      if (i > 0) {
+        document.getElementById(steps[i-1]).classList.remove('doing');
+        document.getElementById(steps[i-1]).classList.add('done-step');
+        document.getElementById(steps[i-1]).querySelector('.proc-step-dot').style.background = 'var(--green)';
+      }
+      if (i < steps.length) {
+        document.getElementById(steps[i]).classList.add('doing');
+        i++;
+        setTimeout(next, 900 + Math.random() * 400);
+      } else {
+        setTimeout(() => goTo(3), 600);
+      }
+    }
+    next();
+  }
+
+  // ── FILE HANDLING ──
+  function addPartes(files) {
+    Array.from(files).forEach(f => {
+      if (!partes.find(p => p.name === f.name)) {
+        partes.push(f);
+      }
+    });
+    renderPartes();
+  }
+
+  function addFotos(files) {
+    Array.from(files).forEach(f => {
+      if (!fotos.find(p => p.name === f.name)) {
+        fotos.push(f);
+      }
+    });
+    renderFotos();
+  }
+
+  function renderPartes() {
+    const list = document.getElementById('partes-list');
+    list.innerHTML = partes.map((f, i) => `
+      <div class="parte-item">
+        📋 ${f.name}
+        <span class="parte-item-remove" onclick="removeParte(${i})">✕</span>
+      </div>
+    `).join('');
+    document.getElementById('counter-partes').textContent = partes.length;
+  }
+
+  function removeParte(i) {
+    partes.splice(i, 1);
+    renderPartes();
+  }
+
+  function renderFotos() {
+    const grid = document.getElementById('fotos-preview');
+    grid.innerHTML = fotos.map((f, i) => {
+      const url = URL.createObjectURL(f);
+      return `
+        <div class="foto-thumb">
+          <img src="${url}" alt="${f.name}">
+          <div class="foto-thumb-remove" onclick="removeFoto(${i})">✕</div>
+        </div>
+      `;
+    }).join('');
+    document.getElementById('counter-fotos').textContent = fotos.length;
+  }
+
+  function removeFoto(i) {
+    fotos.splice(i, 1);
+    renderFotos();
+  }
+
+  // ── DRAG AND DROP ──
+  ['drop-partes', 'drop-fotos'].forEach(id => {
+    const zone = document.getElementById(id);
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      const fn = id === 'drop-partes' ? addPartes : addFotos;
+      fn(e.dataTransfer.files);
+    });
+  });
+
+  // ── LIVE EDIT ──
+  function updateEstado(val) {
+    document.getElementById('preview-estado').textContent = val;
+  }
+
+  // ── OBRA SELECT ──
+  document.getElementById('obra-nombre').addEventListener('change', function() {
+    if (this.value === 'nueva') {
+      this.value = '';
+      openModal();
+    }
+  });
+
+  function openModal() {
+    document.getElementById('modal-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('nueva-obra-nombre').focus(), 100);
+  }
+
+  function closeModalBtn() {
+    const overlay = document.getElementById('modal-overlay');
+    overlay.classList.remove('open');
+    // Reset to previous value if nothing selected
+    const sel = document.getElementById('obra-nombre');
+    if (!sel.value) sel.value = '';
+  }
+
+  function closeModal(e) {
+    if (e.target === document.getElementById('modal-overlay')) closeModalBtn();
+  }
+
+  function guardarObra() {
+    const nombre = document.getElementById('nueva-obra-nombre').value.trim();
+    if (!nombre) {
+      document.getElementById('nueva-obra-nombre').style.borderColor = 'var(--red)';
+      document.getElementById('nueva-obra-nombre').focus();
+      return;
+    }
+    document.getElementById('nueva-obra-nombre').style.borderColor = '';
+
+    // Add to select
+    const sel = document.getElementById('obra-nombre');
+    const opt = document.createElement('option');
+    opt.value = nombre;
+    opt.textContent = nombre;
+    opt.selected = true;
+    // Insert before the "Nueva obra" option
+    sel.insertBefore(opt, sel.querySelector('option[value="nueva"]'));
+    sel.value = nombre;
+
+    // Close modal and clear fields
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.getElementById('nueva-obra-nombre').value = '';
+    document.getElementById('nueva-obra-direccion').value = '';
+    document.getElementById('nueva-obra-promotor').value = '';
+    document.getElementById('nueva-obra-arquitecto').value = 'Bernat Parera';
+
+    showToast(`✓ Obra "${nombre}" creada`);
+  }
+
+  // Enter key in modal
+  document.getElementById('nueva-obra-nombre').addEventListener('keydown', e => {
+    if (e.key === 'Enter') guardarObra();
+  });
+
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+</script>
+</body>
+</html>

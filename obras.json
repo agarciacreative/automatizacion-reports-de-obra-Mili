@@ -1,0 +1,24 @@
+{
+  "obras": [
+    {
+      "id": "rancho-manolo",
+      "nombre": "Rancho Manolo",
+      "direccion": "Manacor, Mallorca",
+      "promotor": "",
+      "tipo": "reforma",
+      "arquitecto": "Bernat Parera",
+      "activa": true,
+      "creada": "2026-04-01"
+    },
+    {
+      "id": "molino-2",
+      "nombre": "Molino 2",
+      "direccion": "Calle Industria Nº13, Palma de Mallorca",
+      "promotor": "UNDERHIP",
+      "tipo": "reforma",
+      "arquitecto": "Bernat Parera",
+      "activa": false,
+      "creada": "2026-01-01"
+    }
+  ]
+}
