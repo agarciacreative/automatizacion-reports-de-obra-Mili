@@ -1,104 +1,203 @@
-# CONTEXT — Sistema de Reports Mili Construcciones
-
-> Pega este archivo al inicio de cualquier conversación con Claude para restaurar todo el contexto del proyecto.
-
----
-
-## 1. Quién es Mili
-
-**Mili** es una autónoma que se dedica a la dirección y ejecución de obras de construcción en Mallorca. Trabaja sola como jefa de obra y gestiona varios proyectos simultáneamente. Su encargado de obra principal es **Domingo**, que lidera el equipo de operarios sobre el terreno.
-
-**Equipo habitual en obra:**
-- Domingo — Encargado
-- David — Oficial
-- Brahim — Oficial
-- Morad — Oficial
-
-**Obra principal activa:** Rancho Manolo (reforma integral de finca rural en Mallorca, promotor no especificado). Trabajos actuales: derribos, estructura, drenaje, pilares metálicos.
-
-**Obra de referencia anterior:** Molino 2, Calle Industria Nº13, Palma de Mallorca. Promotor: UNDERHIP.
+# CONTEXT — Mili Construcciones · Generador de Reports
+> Adjunta este archivo al inicio de una sesión de Claude Code para restaurar el contexto completo.
 
 ---
 
-## 2. El sistema de reports
+## El proyecto
 
-### Qué hace el sistema
-Cada semana Domingo fotografía los partes de obra escritos a mano y fotos del proceso, los envía por WhatsApp a un grupo compartido (Mili + Domingo + Alberto), y el sistema genera automáticamente un PDF profesional que Mili revisa y envía al cliente.
+Aplicación web para **Mili Construcciones** (autónoma de construcción en Mallorca).
+Domingo (jefe de obra) escribe partes a mano cada día. Mili sube fotos de esos partes + fotos de obra → la app genera un PDF profesional listo para enviar al cliente.
 
-### Flujo técnico (arquitectura acordada)
+**Equipo habitual:** Domingo (encargado), David, Brahim, Morad (oficiales).
+**Roles fijos en documentos:** Mili = Gerente · Domingo = Jefe de obra · Bernat Parera = Arquitecto.
+
+---
+
+## Estado actual (mayo 2026)
+
+| Fase | Estado |
+|------|--------|
+| 0 Setup | ✅ Completada |
+| 1 Frontend | ✅ Completada |
+| 2 Backend Express | ✅ Completada |
+| 3 OCR Claude Vision | ✅ Completada |
+| 4 PDF Playwright | ✅ Completada |
+| 5 OneDrive | ⏳ Pendiente (requiere Azure App Registration) |
+| 6 WhatsApp WATI | ⏳ Pendiente (requiere credenciales WATI) |
+| 7 Automatización n8n | ⏳ Pendiente |
+
+**Deploy activo:** `https://automatizacion-reports-de-obra-mili-production.up.railway.app`
+**GitHub:** `https://github.com/agarciacreative/automatizacion-reports-de-obra-Mili`
+**Railway:** usa Docker (`mcr.microsoft.com/playwright:v1.52.0-jammy`) forzado por `railway.toml`
+
+---
+
+## Stack técnico
+
+| Pieza | Tecnología |
+|-------|-----------|
+| Backend | Node.js 18+ + Express 4 (CommonJS) |
+| Frontend | Vanilla JS SPA — `index.html` único |
+| OCR / resumen | `@anthropic-ai/sdk` v0.52 · modelo `claude-sonnet-4-6` |
+| PDF | Playwright + Chromium headless (browser singleton) |
+| Datos | `obras.json` (sin DB real aún — migración a Supabase planificada) |
+| Deploy | Railway con Dockerfile |
+| Proceso local | `npm run dev` (nodemon) |
+
+---
+
+## Estructura de ficheros
+
 ```
-Domingo (WhatsApp grupo)
-  → prefijo "parte" + foto del parte escrito a mano
-  → prefijo "obra" + foto de progreso de obra
-
-n8n (orquestador)
-  → recibe mensajes vía webhook
-  → clasifica por prefijo
-  → agrupa por semana (corte: domingo 20:00)
-  → dispara Claude API
-
-Claude API
-  → OCR de partes escritos a mano (Vision)
-  → genera resumen ejecutivo + tabla de trabajos
-  → devuelve JSON estructurado
-
-n8n
-  → inyecta datos en plantilla HTML
-  → convierte a PDF con Puppeteer/Playwright
-  → sube a OneDrive (carpeta: Obra X > Semana N > report.pdf)
-  → avisa a Mili por WhatsApp con enlace
-
-Mili
-  → revisa el PDF
-  → lo reenvía al cliente
+/
+├── server.js                 ← Express: rutas + headers seguridad
+├── index.html                ← SPA 3 pantallas
+├── package.json
+├── ecosystem.config.js       ← PM2 (VPS manual)
+├── Dockerfile                ← imagen playwright:v1.52.0-jammy
+├── railway.toml              ← fuerza builder=DOCKERFILE en Railway
+├── obras.json                ← obras activas (BD temporal)
+├── .env                      ← NO en git — contiene ANTHROPIC_API_KEY
+├── routes/
+│   ├── generate.js           ← pipeline OCR→resumen→PDF con SSE
+│   └── obras.js              ← CRUD obras.json
+├── services/
+│   ├── ocr.js                ← Claude Vision → JSON de trabajos
+│   ├── summary.js            ← Claude texto → resumen ejecutivo
+│   ├── pdf.js                ← Playwright → PDF A4
+│   ├── onedrive.js           ← STUB vacío
+│   └── whatsapp.js           ← STUB vacío
+├── templates/
+│   ├── template_report_semanal.html
+│   └── template_acta_tecnica.html
+├── output/                   ← PDFs generados (gitignored)
+├── tmp/                      ← uploads temporales (gitignored)
+└── deploy/
+    ├── nginx.conf            ← para VPS manual
+    └── update.sh             ← script de actualización VPS
 ```
 
-### Decisiones de diseño cerradas
-- Las fotos NO van emparejadas con entradas de trabajo — van en un grid independiente (sección 03)
-- No hay sección de "próximos pasos"
-- Estructura fija: 01 Resumen ejecutivo · 02 Trabajos realizados · 03 Fotografías del proceso
-- Para el acta de reunión técnica: 01 Asistentes · 02 Decisiones tomadas · 03 Puntos pendientes · 04 Croquis técnicos
+---
 
-### Errores y mitigaciones acordadas
-| Error | Solución |
-|-------|----------|
-| Foto borrosa / OCR baja confianza | Sistema de 3 niveles: alta → normal · media → ⚠ en report · baja → bot pide reenvío |
-| Domingo olvida prefijo | Claude Vision clasifica visualmente como fallback |
-| Parte llega tarde | Ventana de corte semanal (domingo 20:00) — acumulado semana siguiente |
-| Fallo Claude API | Timeout 30s + reintento ×2 + aviso al grupo |
-| Fallo subida OneDrive | Reintento ×2 → backup PDF por WhatsApp directo a Mili |
-| Cambio API WhatsApp | Proveedor oficial (WATI o Twilio) + carpeta OneDrive compartida como backup de entrada |
+## Variables de entorno
+
+En local → fichero `.env` en la raíz (nunca en git).
+En Railway → panel Variables del servicio.
+
+```
+ANTHROPIC_API_KEY=sk-ant-api03-...
+NODE_ENV=development
+PORT=3000
+ONEDRIVE_CLIENT_ID=        (vacío, Fase 5)
+ONEDRIVE_CLIENT_SECRET=    (vacío, Fase 5)
+ONEDRIVE_TENANT_ID=        (vacío, Fase 5)
+WATI_API_URL=https://live-mt-server.wati.io
+WATI_API_TOKEN=            (vacío, Fase 6)
+WATI_PHONE_MILI=+34...     (vacío, Fase 6)
+```
 
 ---
 
-## 3. Dos tipos de documentos
+## Cómo correr en local (Windows con Node portátil)
 
-### A) Report semanal de obra
-Generado cada semana a partir de los partes de Domingo.
-Secciones: cabecera · datos obra · banda de estado · resumen ejecutivo · tabla trabajos · grid fotos · pie firma.
-
-### B) Acta de reunión técnica
-Generado tras visitas de obra con arquitecto u otros técnicos.
-Secciones: cabecera · datos obra · objeto · asistentes · decisiones tomadas · puntos pendientes · croquis técnicos.
-Los croquis se muestran con efecto de papel técnico (cuadrícula sutil + marco).
-
----
-
-## 4. Stack técnico
-
-- **Orquestador:** n8n (self-hosted o cloud)
-- **Canal de entrada:** WhatsApp Business (WATI o Twilio)
-- **IA:** Claude API (claude-sonnet-4) con Vision para OCR
-- **Generación PDF:** Playwright/Puppeteer (HTML → PDF)
-- **Almacenamiento:** OneDrive (Microsoft)
-- **Notificaciones:** WhatsApp al grupo
-- **Fonts:** DM Serif Display + DM Sans (Google Fonts)
+```powershell
+# Node está en: C:\Users\agarcia\tools\node-v22.15.1-win-x64\
+# Git está en:  C:\Users\agarcia\tools\PortableGit\cmd\git.exe
+# El proyecto está en \\svrnscdc2\redirected$\agarcia\Desktop\PROYECTO REPORTS OBRAS
+# Usar subst para evitar problemas de npm con rutas UNC:
+subst P: "\\svrnscdc2\redirected$\agarcia\Desktop\PROYECTO REPORTS OBRAS"
+Set-Location P:\
+npm run dev   # → http://localhost:3000
+```
 
 ---
 
-## 5. Personas del proyecto
+## Pipeline de generación
 
-- **Mili** — cliente, jefa de obra autónoma
-- **Domingo** — encargado de obra, genera los partes
-- **Alberto** — asesor de automatización e IA (tú), supervisor del sistema
-- **Isra** — socio de Alberto en proyectos de marketing digital
+```
+POST /api/generate  →  { jobId }
+GET  /api/progress/:jobId  →  SSE: { step, done, error, result }
+
+Paso 1: OCR (services/ocr.js)
+  - claude-sonnet-4-6 con Vision
+  - System prompt cacheado (cache_control: ephemeral)
+  - Devuelve: { trabajos[], confianza: alta|media|baja }
+  - Trabaja ordenados cronológicamente por parseFecha()
+
+Paso 2: datos extraídos
+
+Paso 3: Resumen ejecutivo (services/summary.js)
+  - claude-sonnet-4-6
+  - 4-5 líneas, tercera persona, tono formal para el promotor
+
+Paso 4: composición fotos
+
+Paso 5: PDF (services/pdf.js)
+  - Playwright browser singleton (reutilizado entre requests)
+  - Template HTML con placeholders {{VARIABLE}}
+  - Fotos embebidas como base64
+  - Tabla de trabajos: reemplaza <tbody> completo con regex
+  - Output: output/report_{slug}_{YYYYMMDD}.pdf
+
+GET /api/download/:filename  →  descarga el PDF
+GET /api/debug               →  solo en NODE_ENV≠production, muestra último OCR
+```
+
+---
+
+## Seguridad implementada (auditoría mayo 2026)
+
+- `express.static` solo sirve `index.html` y `/output` (no expone código fuente)
+- Multer: `fileFilter` solo `image/*`, límite 15 MB
+- `crypto.randomUUID()` para job IDs
+- TTL 10 min para jobs huérfanos (memory leak si cliente desconecta)
+- `escHtml()` en todos los campos del template incluido resumen ejecutivo
+- XSS frontend: `createElement + textContent` en lugar de `innerHTML` para datos del usuario
+- `obras.json`: escritura atómica con fichero `.tmp` + `renameSync`
+- Headers: `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`
+- `/api/debug` bloqueado en producción
+
+---
+
+## Fases pendientes — detalle
+
+### Fase 5 — OneDrive
+Necesita Azure App Registration con `Files.ReadWrite.All` (Microsoft Graph).
+Implementar `services/onedrive.js` → función `uploadReport(pdfPath, obraName, semana)`.
+El botón "Guardar en OneDrive" en Pantalla 3 ya existe pero está `disabled`.
+
+### Fase 6 — WhatsApp
+Proveedor: WATI (~40€/mes). Necesita `WATI_API_TOKEN` y `WATI_PHONE_MILI`.
+Implementar `services/whatsapp.js` → función `sendReportReady(phone, obraName, link)`.
+El botón "Enviar enlace a Mili" en Pantalla 3 ya existe pero está `disabled`.
+
+### Fase 7 — n8n automático
+Endpoint `GET /api/generate-auto` que acepta URLs de imágenes en lugar de file uploads.
+Workflow n8n: webhook WhatsApp → clasificar prefijo → acumular semana → llamar API → PDF → notificar.
+
+---
+
+## Visión a largo plazo (acordada)
+
+Evolucionar hacia plataforma de gestión para constructoras:
+- Multi-usuario con autenticación
+- Módulos: reports, contabilidad, presupuestos
+- BD real: Supabase (PostgreSQL) en lugar de obras.json
+- Stack objetivo: Next.js + Supabase (auth + DB + storage) + Hetzner (Playwright)
+- Migración incremental: BD primero → auth → Next.js
+
+---
+
+## Diseño y estilo
+
+- **Fuentes:** DM Serif Display (títulos, italic) + DM Sans (body, weights 300/400/500/600)
+- **Colores:** `--navy: #1a1a18` · `--cream: #f5f3ef` · `--green: #3B6D11` · `--amber: #854F0B`
+- Guía completa en `STYLE_GUIDE.md`
+- Templates con placeholders `{{VARIABLE}}` — ver lista completa en cada template
+
+---
+
+## Obras en obras.json
+
+- **Rancho Manolo** — Manacor, Mallorca · reforma · activa
+- **Molino 2** — C/ Industria Nº13, Palma · promotor UNDERHIP · inactiva
