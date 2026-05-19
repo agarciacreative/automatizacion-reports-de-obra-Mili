@@ -1280,7 +1280,7 @@
   function loadObras() {
     const stored = localStorage.getItem('mili-obras');
     if (stored) {
-      populateObrasSelect(JSON.parse(stored));
+      try { populateObrasSelect(JSON.parse(stored)); } catch {}
     } else {
       fetch('/api/obras')
         .then(r => r.json())
@@ -1289,7 +1289,15 @@
           localStorage.setItem('mili-obras', JSON.stringify(list));
           populateObrasSelect(list);
         })
-        .catch(() => {});
+        .catch(() => {
+          // Servidor no disponible — mostrar aviso en el select
+          const sel = document.getElementById('obra-nombre');
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.disabled = true;
+          opt.textContent = 'No se pudieron cargar las obras';
+          sel.insertBefore(opt, sel.querySelector('option[value="nueva"]'));
+        });
     }
   }
 
