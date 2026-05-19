@@ -5,8 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "NODE_ENV=production node server.js",
-    "postinstall": "npx playwright install chromium --with-deps"
+    "start": "NODE_ENV=production node server.js"
   },
   "dependencies": {
     "playwright": "^1.52.0",
