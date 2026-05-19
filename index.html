@@ -1278,27 +1278,30 @@
 
   // ── OBRAS (localStorage) ──
   function loadObras() {
+    // Mostrar inmediatamente desde caché si existe
     const stored = localStorage.getItem('mili-obras');
     if (stored) {
       try { populateObrasSelect(JSON.parse(stored)); } catch {}
-    } else {
-      fetch('/api/obras')
-        .then(r => r.json())
-        .then(data => {
-          const list = data.obras || data;
-          localStorage.setItem('mili-obras', JSON.stringify(list));
-          populateObrasSelect(list);
-        })
-        .catch(() => {
-          // Servidor no disponible — mostrar aviso en el select
+    }
+
+    // Siempre sincronizar con el servidor en background
+    fetch('/api/obras')
+      .then(r => r.json())
+      .then(data => {
+        const list = data.obras || data;
+        localStorage.setItem('mili-obras', JSON.stringify(list));
+        populateObrasSelect(list);
+      })
+      .catch(() => {
+        if (!stored) {
+          // Sin caché y sin servidor — mostrar aviso
           const sel = document.getElementById('obra-nombre');
           const opt = document.createElement('option');
-          opt.value = '';
-          opt.disabled = true;
+          opt.value = ''; opt.disabled = true;
           opt.textContent = 'No se pudieron cargar las obras';
           sel.insertBefore(opt, sel.querySelector('option[value="nueva"]'));
-        });
-    }
+        }
+      });
   }
 
   function populateObrasSelect(obras) {
@@ -1677,10 +1680,26 @@
       creada: new Date().toISOString().split('T')[0],
     };
 
-    const stored = localStorage.getItem('mili-obras');
-    const obras = stored ? JSON.parse(stored) : [];
-    obras.push(nuevaObra);
-    localStorage.setItem('mili-obras', JSON.stringify(obras));
+    // Persistir en el servidor (obras.json) y en localStorage como caché
+    fetch('/api/obras', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(nuevaObra),
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+      .then(() => {
+        // Actualizar localStorage con la lista refrescada del servidor
+        return fetch('/api/obras').then(r => r.json()).then(data => {
+          localStorage.setItem('mili-obras', JSON.stringify(data.obras || data));
+        });
+      })
+      .catch(() => {
+        // Servidor no disponible: guardar solo en localStorage como fallback
+        const stored = localStorage.getItem('mili-obras');
+        const obras = stored ? JSON.parse(stored) : [];
+        obras.push(nuevaObra);
+        localStorage.setItem('mili-obras', JSON.stringify(obras));
+      });
 
     const sel = document.getElementById('obra-nombre');
     const opt = document.createElement('option');
