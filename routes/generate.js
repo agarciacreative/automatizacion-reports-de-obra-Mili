@@ -10,6 +10,7 @@ const router = express.Router();
 
 // In-memory job store (suficiente para uso single-user)
 const jobs = new Map();
+let lastDebug = null; // último resultado OCR para inspección
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -80,6 +81,8 @@ async function processJob(jobId, data) {
       const ocr = await extraerPartes(data.partesPaths);
       trabajos = ocr.trabajos;
       confianza = ocr.confianza;
+      lastDebug = { timestamp: new Date().toISOString(), obra: data.obra, semana, ocr };
+      console.log('\n[OCR] Resultado crudo:\n', JSON.stringify(ocr, null, 2));
     }
 
     // Paso 2: extracción completada
@@ -133,6 +136,11 @@ async function processJob(jobId, data) {
     jobs.set(jobId, { step: 0, done: true, error: err.message, result: null });
   }
 }
+
+// GET /api/debug — muestra el último resultado OCR (solo desarrollo)
+router.get('/debug', (req, res) => {
+  res.json(lastDebug || { mensaje: 'Aún no se ha procesado ningún parte' });
+});
 
 // GET /api/download/:filename — sirve el PDF generado
 router.get('/download/:filename', (req, res) => {

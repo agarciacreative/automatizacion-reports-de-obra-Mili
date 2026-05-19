@@ -52,12 +52,18 @@ async function generarPDF(datos, tipoDoc = 'report') {
 function buildReport(html, datos, fechaReport, fechaGeneracion, numSemana) {
   // Filas de la tabla de trabajos
   const filas = (datos.trabajos || []).map((t, i) => {
-    const ops = t.operarios || [];
+    const ops = (t.operarios || []).filter(o => o.nombre && o.nombre.trim());
+    // Si no hay nombres, usar el encargado del formulario como referencia
     const encargado = ops[0]?.nombre || datos.encargado || 'Domingo';
     const otrosOps = ops.slice(1)
       .map(o => `<span class="op-badge">${escHtml(o.nombre || '')}</span>`)
       .join('');
-    const numOp = ops.length || 1;
+    // Intentar extraer número de operarios de la descripción si operarios está vacío
+    let numOp = ops.length;
+    if (numOp === 0) {
+      const match = t.descripcion?.match(/(\d+)\s*(?:OP|OPERARIO)/i);
+      numOp = match ? parseInt(match[1], 10) : 1;
+    }
     const horas = ops.reduce((s, o) => s + (Number(o.horas) || 0), 0);
     const horasStr = horas > 0 ? ` · ${horas}h` : '';
     return `<tr>
