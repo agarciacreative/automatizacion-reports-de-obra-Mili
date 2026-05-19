@@ -596,6 +596,7 @@
     border: 1.5px solid var(--navy);
   }
   .action-btn.outline:hover { background: var(--cream2); }
+  .action-btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
   .action-btn .action-icon { font-size: 1rem; flex-shrink: 0; }
   .action-btn .action-text { flex: 1; }
   .action-btn .action-sub { font-size: 0.7rem; font-weight: 300; opacity: 0.7; display: block; margin-top: 0.05rem; }
@@ -837,8 +838,6 @@
           <label class="form-label">Nombre de la obra</label>
           <select class="form-select" id="obra-nombre">
             <option value="">Seleccionar obra…</option>
-            <option value="Rancho Manolo" selected>Rancho Manolo</option>
-            <option value="Molino 2">Molino 2</option>
             <option value="nueva">+ Nueva obra…</option>
           </select>
         </div>
@@ -1017,18 +1016,18 @@
                 <span class="action-sub" id="pdf-filename">Generando…</span>
               </div>
             </button>
-            <button class="action-btn outline" onclick="showToast('☁️ Subiendo a OneDrive…')">
+            <button class="action-btn outline" disabled title="Disponible próximamente">
               <span class="action-icon">☁️</span>
               <div class="action-text">
                 Guardar en OneDrive
-                <span class="action-sub">Rancho Manolo › Semana 20</span>
+                <span class="action-sub">Próximamente</span>
               </div>
             </button>
-            <button class="action-btn outline" onclick="showToast('📱 Enviando enlace por WhatsApp…')">
+            <button class="action-btn outline" disabled title="Disponible próximamente">
               <span class="action-icon">📱</span>
               <div class="action-text">
                 Enviar enlace a Mili
-                <span class="action-sub">Notificación por WhatsApp</span>
+                <span class="action-sub">Próximamente</span>
               </div>
             </button>
           </div>
@@ -1471,14 +1470,22 @@
       document.getElementById('acta-rc-footer-obra').textContent = obra;
 
       const decisiones = (document.getElementById('acta-decisiones').value || '').split('\n').filter(l => l.trim());
-      document.getElementById('preview-decisiones').innerHTML = decisiones.length > 0
-        ? decisiones.map(d => `<div class="rc-decision">${d.trim()}</div>`).join('')
-        : '<div class="rc-decision" style="color:var(--light);">Sin decisiones registradas.</div>';
+      const previewDec = document.getElementById('preview-decisiones');
+      previewDec.innerHTML = '';
+      if (decisiones.length > 0) {
+        decisiones.forEach(d => { const el = document.createElement('div'); el.className = 'rc-decision'; el.textContent = d.trim(); previewDec.appendChild(el); });
+      } else {
+        const el = document.createElement('div'); el.className = 'rc-decision'; el.style.color = 'var(--light)'; el.textContent = 'Sin decisiones registradas.'; previewDec.appendChild(el);
+      }
 
       const pendientes = (document.getElementById('acta-pendientes').value || '').split('\n').filter(l => l.trim());
-      document.getElementById('preview-pendientes').innerHTML = pendientes.length > 0
-        ? pendientes.map(p => `<div class="rc-pendiente">${p.trim()}</div>`).join('')
-        : '<div class="rc-pendiente" style="color:var(--light);">Sin puntos pendientes.</div>';
+      const previewPend = document.getElementById('preview-pendientes');
+      previewPend.innerHTML = '';
+      if (pendientes.length > 0) {
+        pendientes.forEach(p => { const el = document.createElement('div'); el.className = 'rc-pendiente'; el.textContent = p.trim(); previewPend.appendChild(el); });
+      } else {
+        const el = document.createElement('div'); el.className = 'rc-pendiente'; el.style.color = 'var(--light)'; el.textContent = 'Sin puntos pendientes.'; previewPend.appendChild(el);
+      }
     }
   }
 
@@ -1534,7 +1541,10 @@
       };
 
     } catch (err) {
-      showToast('Error: ' + err.message);
+      const msg = err instanceof TypeError && err.message.includes('fetch')
+        ? 'No se puede conectar con el servidor. ¿Está arrancado?'
+        : 'Error: ' + err.message;
+      showToast(msg);
       goTo(1);
     }
   }

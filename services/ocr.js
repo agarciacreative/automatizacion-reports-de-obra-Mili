@@ -63,7 +63,7 @@ async function extraerPartes(rutasImagenes) {
     const mediaType   = getMediaType(ruta);
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-4-6',
       max_tokens: 2048,
       system: [
         {
@@ -89,8 +89,9 @@ async function extraerPartes(rutasImagenes) {
       ],
     });
 
-    const raw = response.content[0].text;
-    console.log('[OCR raw response]:', raw.slice(0, 300));
+    const raw = response.content?.[0]?.text;
+    if (!raw) { console.error('[OCR] Respuesta vacía de la API'); confianzaGlobal = 'baja'; continue; }
+    if (process.env.NODE_ENV !== 'production') console.log('[OCR raw response]:', raw.slice(0, 300));
 
     try {
       const jsonStr = cleanJson(raw);

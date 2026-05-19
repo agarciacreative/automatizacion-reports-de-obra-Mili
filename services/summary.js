@@ -23,7 +23,7 @@ async function generarResumen(trabajos, obraName, semana) {
     .join('\n');
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-4-6',
     max_tokens: 512,
     system: [
       {
@@ -40,7 +40,9 @@ async function generarResumen(trabajos, obraName, semana) {
     ],
   });
 
-  return response.content[0].text.trim();
+  const text = response.content?.[0]?.text;
+  if (!text) throw new Error('La API no devolvió contenido de texto en el resumen');
+  return text.trim();
 }
 
 module.exports = { generarResumen };

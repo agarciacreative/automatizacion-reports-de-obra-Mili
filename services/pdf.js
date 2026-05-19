@@ -2,6 +2,13 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
+// Singleton: reutilizar el browser entre requests para ahorrar memoria y tiempo
+let browserInstance = null;
+async function getBrowser() {
+  if (!browserInstance) browserInstance = await chromium.launch();
+  return browserInstance;
+}
+
 const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
 async function generarPDF(datos, tipoDoc = 'report') {
@@ -32,9 +39,9 @@ async function generarPDF(datos, tipoDoc = 'report') {
     : `report_${slug}_${fecha}.pdf`;
   const outputPath = path.join(outputDir, filename);
 
-  const browser = await chromium.launch();
+  const browser = await getBrowser();
+  const page = await browser.newPage();
   try {
-    const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle' });
     await page.pdf({
       path: outputPath,
@@ -43,7 +50,7 @@ async function generarPDF(datos, tipoDoc = 'report') {
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
     });
   } finally {
-    await browser.close();
+    await page.close();
   }
 
   return { filename, path: outputPath };
@@ -96,7 +103,7 @@ function buildReport(html, datos, fechaReport, fechaGeneracion, numSemana) {
     .replace(/{{SEMANA_RANGO}}/g,     escHtml(datos.semana  || '—'))
     .replace(/{{ENCARGADO}}/g,        escHtml(datos.encargado || 'Domingo'))
     .replace(/{{ESTADO_TEXTO}}/g,     escHtml(datos.estado  || 'Obra en ejecución.'))
-    .replace(/{{RESUMEN_EJECUTIVO}}/g,datos.resumen || '—')
+    .replace(/{{RESUMEN_EJECUTIVO}}/g,escHtml(datos.resumen || '—'))
     .replace(/{{FOTOS_GRID}}/g,       fotosHtml)
     .replace(/{{FECHA_GENERACION}}/g, fechaGeneracion)
     .replace(/{{NUM_SEMANA}}/g,       String(numSemana));

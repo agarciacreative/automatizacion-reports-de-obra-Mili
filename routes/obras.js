@@ -5,17 +5,43 @@ const path = require('path');
 const router = express.Router();
 const OBRAS_FILE = path.join(__dirname, '..', 'obras.json');
 
+function readObras() {
+  try {
+    return JSON.parse(fs.readFileSync(OBRAS_FILE, 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
 router.get('/', (req, res) => {
-  const obras = JSON.parse(fs.readFileSync(OBRAS_FILE, 'utf8'));
-  res.json(obras);
+  try {
+    res.json(readObras());
+  } catch (err) {
+    res.status(500).json({ error: 'Error leyendo obras' });
+  }
 });
 
 router.post('/', (req, res) => {
-  const obras = JSON.parse(fs.readFileSync(OBRAS_FILE, 'utf8'));
-  const nueva = { id: req.body.nombre.toLowerCase().replace(/\s+/g, '-'), ...req.body, activa: true, creada: new Date().toISOString().split('T')[0] };
-  obras.push(nueva);
-  fs.writeFileSync(OBRAS_FILE, JSON.stringify(obras, null, 2));
-  res.json(nueva);
+  const nombre = req.body && typeof req.body.nombre === 'string' ? req.body.nombre.trim() : '';
+  if (!nombre) return res.status(400).json({ error: 'El campo nombre es obligatorio' });
+
+  try {
+    const obras = readObras();
+    const nueva = {
+      id: nombre.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      ...req.body,
+      nombre,
+      activa: true,
+      creada: new Date().toISOString().split('T')[0],
+    };
+    obras.push(nueva);
+    const tmp = OBRAS_FILE + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(obras, null, 2));
+    fs.renameSync(tmp, OBRAS_FILE);
+    res.json(nueva);
+  } catch (err) {
+    res.status(500).json({ error: 'Error guardando obra' });
+  }
 });
 
 module.exports = router;

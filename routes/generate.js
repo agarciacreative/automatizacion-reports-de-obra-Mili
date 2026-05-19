@@ -1,16 +1,17 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const multer  = require('multer');
+const path    = require('path');
+const fs      = require('fs');
+const crypto  = require('crypto');
 const { extraerPartes } = require('../services/ocr');
 const { generarResumen } = require('../services/summary');
 const { generarPDF }     = require('../services/pdf');
 
 const router = express.Router();
 
-// In-memory job store (suficiente para uso single-user)
 const jobs = new Map();
-let lastDebug = null; // último resultado OCR para inspección
+const JOB_TTL_MS = 10 * 60 * 1000; // 10 minutos
+let lastDebug = null;
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -22,11 +23,23 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
 });
-const upload = multer({ storage });
+
+function imageFilter(req, file, cb) {
+  if (!file.mimetype.startsWith('image/')) {
+    return cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}`));
+  }
+  cb(null, true);
+}
+
+const upload = multer({
+  storage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB máximo por imagen
+});
 
 // POST /api/generate — inicia el job y devuelve jobId
 router.post('/generate', upload.fields([{ name: 'partes' }, { name: 'fotos' }]), (req, res) => {
-  const jobId = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const jobId = crypto.randomUUID();
   const { obra, fechaInicio, fechaFin, encargado, tipoDoc, estado } = req.body;
   const partesPaths = (req.files?.partes || []).map(f => f.path);
   const fotosPaths  = (req.files?.fotos  || []).map(f => f.path);
@@ -34,7 +47,11 @@ router.post('/generate', upload.fields([{ name: 'partes' }, { name: 'fotos' }]),
   jobs.set(jobId, { step: 0, done: false, error: null, result: null });
   res.json({ jobId });
 
-  processJob(jobId, { obra, fechaInicio, fechaFin, encargado, tipoDoc, estado, partesPaths, fotosPaths });
+  // TTL: limpiar job si el cliente nunca hace polling hasta completar
+  const ttl = setTimeout(() => jobs.delete(jobId), JOB_TTL_MS);
+
+  processJob(jobId, { obra, fechaInicio, fechaFin, encargado, tipoDoc, estado, partesPaths, fotosPaths })
+    .finally(() => clearTimeout(ttl));
 });
 
 // GET /api/progress/:jobId — SSE: emite eventos de progreso
@@ -82,7 +99,7 @@ async function processJob(jobId, data) {
       trabajos = ocr.trabajos;
       confianza = ocr.confianza;
       lastDebug = { timestamp: new Date().toISOString(), obra: data.obra, semana, ocr };
-      console.log('\n[OCR] Resultado crudo:\n', JSON.stringify(ocr, null, 2));
+      if (process.env.NODE_ENV !== 'production') console.log('\n[OCR] Resultado crudo:\n', JSON.stringify(ocr, null, 2));
     }
 
     // Paso 2: extracción completada
@@ -134,11 +151,14 @@ async function processJob(jobId, data) {
   } catch (err) {
     console.error('[generate] Error en job', jobId, err.message);
     jobs.set(jobId, { step: 0, done: true, error: err.message, result: null });
+    // Limpiar temporales también en caso de error
+    [...(data.partesPaths || []), ...(data.fotosPaths || [])].forEach(p => { try { fs.unlinkSync(p); } catch {} });
   }
 }
 
-// GET /api/debug — muestra el último resultado OCR (solo desarrollo)
+// GET /api/debug — solo disponible en desarrollo
 router.get('/debug', (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(404).json({ error: 'Not found' });
   res.json(lastDebug || { mensaje: 'Aún no se ha procesado ningún parte' });
 });
 
