@@ -1010,11 +1010,11 @@
         <div class="info-card">
           <div class="info-card-title">Acciones</div>
           <div class="action-list">
-            <button class="action-btn" onclick="showToast('📄 Descargando PDF…')">
+            <button class="action-btn" id="btn-descargar" onclick="descargarPDF()">
               <span class="action-icon">⬇️</span>
               <div class="action-text">
                 Descargar PDF
-                <span class="action-sub">report_rancho_manolo_semana20.pdf</span>
+                <span class="action-sub" id="pdf-filename">Generando…</span>
               </div>
             </button>
             <button class="action-btn outline" onclick="showToast('☁️ Subiendo a OneDrive…')">
@@ -1431,6 +1431,10 @@
 
       // Datos del backend si están disponibles
       if (jobResult) {
+        // Actualizar nombre del PDF en el botón de descarga
+        const pdfLabel = document.getElementById('pdf-filename');
+        if (pdfLabel) pdfLabel.textContent = jobResult.filename || 'report.pdf';
+
         document.getElementById('rc-resumen').textContent = jobResult.resumen || '—';
         document.getElementById('rc-resumen').style.color = '';
         renderTrabajosTable(jobResult.trabajos);
@@ -1678,6 +1682,19 @@
   document.getElementById('nueva-obra-nombre').addEventListener('keydown', e => {
     if (e.key === 'Enter') guardarObra();
   });
+
+  function descargarPDF() {
+    if (!jobResult || !jobResult.filename) {
+      showToast('El PDF aún no está listo');
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = `/api/download/${jobResult.filename}`;
+    a.download = jobResult.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 
   function resetApp() {
     jobResult = null;

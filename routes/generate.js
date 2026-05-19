@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { extraerPartes } = require('../services/ocr');
 const { generarResumen } = require('../services/summary');
+const { generarPDF }     = require('../services/pdf');
 
 const router = express.Router();
 
@@ -93,9 +94,17 @@ async function processJob(jobId, data) {
     setStep(jobId, 4);
     await delay(300);
 
-    // Paso 5: PDF (implementar en Fase 4)
+    // Paso 5: generar PDF con Playwright
     setStep(jobId, 5);
-    await delay(400);
+    const pdf = await generarPDF({
+      obra:      data.obra,
+      semana,
+      encargado: data.encargado,
+      estado:    data.estado || '',
+      resumen,
+      trabajos,
+      fotos:     data.fotosPaths,
+    }, data.tipoDoc || 'report');
 
     jobs.set(jobId, {
       step: 5,
@@ -111,18 +120,31 @@ async function processJob(jobId, data) {
         resumen,
         confianza,
         numPartes: data.partesPaths.length,
-        numFotos: data.fotosPaths.length,
+        numFotos:  data.fotosPaths.length,
+        filename:  pdf.filename,
       },
     });
 
-    // Limpiar temporales de partes (fotos se necesitan en Fase 4 para el PDF)
-    data.partesPaths.forEach(p => { try { fs.unlinkSync(p); } catch {} });
+    // Limpiar temporales (partes y fotos ya embebidos en el PDF)
+    [...data.partesPaths, ...data.fotosPaths].forEach(p => { try { fs.unlinkSync(p); } catch {} });
 
   } catch (err) {
     console.error('[generate] Error en job', jobId, err.message);
     jobs.set(jobId, { step: 0, done: true, error: err.message, result: null });
   }
 }
+
+// GET /api/download/:filename — sirve el PDF generado
+router.get('/download/:filename', (req, res) => {
+  const filename = path.basename(req.params.filename); // evitar path traversal
+  const filePath = path.join(__dirname, '..', 'output', filename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Archivo no encontrado' });
+  }
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.sendFile(filePath);
+});
 
 function setStep(jobId, step) {
   const job = jobs.get(jobId);
