@@ -15,6 +15,7 @@ env/
 # Outputs generados
 output/
 outputs/
+tmp/
 *.pdf
 *.tmp
 

@@ -4,9 +4,9 @@
   "description": "Generador de reports de obra para Mili Construcciones",
   "private": true,
   "scripts": {
-    "dev": "node server/index.js",
-    "start": "NODE_ENV=production node server/index.js",
-    "install:playwright": "playwright install chromium"
+    "dev": "nodemon server.js",
+    "start": "NODE_ENV=production node server.js",
+    "postinstall": "npx playwright install chromium --with-deps"
   },
   "dependencies": {
     "playwright": "^1.52.0",
