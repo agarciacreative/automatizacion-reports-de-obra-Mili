@@ -726,6 +726,78 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+
+  /* ── VALIDATION ERRORS ── */
+  .form-input.error, .form-select.error { border-color: var(--red) !important; }
+  .drop-zone.error { border-color: var(--red); background: var(--red-bg); }
+  .field-error-msg {
+    font-size: 0.72rem;
+    color: var(--red);
+    margin-top: 0.3rem;
+    font-weight: 400;
+  }
+
+  /* ── TIPO DOC TOGGLE ── */
+  .tipo-doc-label {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+  .tipo-doc-label.selected { background: var(--navy); color: var(--cream); font-weight: 500; border-color: var(--navy); }
+  .tipo-doc-label.unselected { background: var(--white); color: var(--navy); border-color: var(--border); }
+
+  /* ── ACTA PREVIEW STYLES ── */
+  .rc-asistente-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.2rem; }
+  .rc-asistente {
+    display: inline-flex; flex-direction: column;
+    padding: 0.3rem 0.7rem;
+    background: #e8e5df;
+    border-radius: 3px;
+  }
+  .rc-asistente.principal { background: var(--navy); color: var(--cream); }
+  .rc-asistente-nombre { font-size: 0.65rem; font-weight: 500; }
+  .rc-asistente-rol { font-size: 0.5rem; font-weight: 400; opacity: 0.7; margin-top: 0.1rem; }
+  .rc-decision {
+    padding: 0.5rem 0.7rem;
+    background: var(--white);
+    border-left: 2px solid var(--navy);
+    margin-bottom: 0.35rem;
+    font-size: 0.68rem;
+    line-height: 1.5;
+  }
+  .rc-pendiente {
+    padding: 0.5rem 0.7rem;
+    background: #faf8f4;
+    border-left: 2px solid #c0a060;
+    margin-bottom: 0.35rem;
+    font-size: 0.68rem;
+    line-height: 1.5;
+  }
+
+  /* ── RESPONSIVE TABLET ── */
+  @media (max-width: 1024px) {
+    .s1-layout { grid-template-columns: 1fr; }
+    .s1-left { border-right: none; border-bottom: 1px solid var(--border); padding: 2rem 2rem; }
+    .s1-right { padding: 2rem 2rem; }
+    .s3-layout { grid-template-columns: 1fr; }
+    .s3-sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: none; }
+    .topnav { padding: 0 1.5rem; }
+  }
+  @media (max-width: 768px) {
+    .s1-left, .s1-right { padding: 1.5rem; }
+    .topnav { padding: 0 1rem; }
+    .nav-step { padding: 0.3rem 0.6rem; font-size: 0.62rem; }
+    .s3-sidebar { padding: 1.5rem; }
+    .s3-preview { padding: 1rem; }
+    .form-row { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -774,11 +846,11 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Fecha inicio semana</label>
-            <input type="date" class="form-input" id="fecha-inicio" value="2026-05-11">
+            <input type="date" class="form-input" id="fecha-inicio">
           </div>
           <div class="form-group">
             <label class="form-label">Fecha fin semana</label>
-            <input type="date" class="form-input" id="fecha-fin" value="2026-05-17">
+            <input type="date" class="form-input" id="fecha-fin">
           </div>
         </div>
 
@@ -794,12 +866,29 @@
         <div class="form-group">
           <label class="form-label">Tipo de documento</label>
           <div style="display:flex;gap:0.6rem;">
-            <label style="flex:1;display:flex;align-items:center;gap:0.5rem;padding:0.7rem 0.9rem;background:var(--navy);color:var(--cream);border-radius:4px;cursor:pointer;font-size:0.82rem;font-weight:500;">
+            <label class="tipo-doc-label selected">
               <input type="radio" name="tipo-doc" value="report" checked style="accent-color:var(--cream);"> Report semanal
             </label>
-            <label style="flex:1;display:flex;align-items:center;gap:0.5rem;padding:0.7rem 0.9rem;background:var(--white);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:0.82rem;">
+            <label class="tipo-doc-label unselected">
               <input type="radio" name="tipo-doc" value="acta" style="accent-color:var(--navy);"> Acta técnica
             </label>
+          </div>
+        </div>
+
+        <!-- ACTA FIELDS (visible solo en modo acta) -->
+        <div id="acta-fields" style="display:none;">
+          <div class="divider"></div>
+          <div class="form-group">
+            <label class="form-label">Objeto de la reunión</label>
+            <textarea class="form-input" id="acta-objeto" rows="2" style="resize:vertical;" placeholder="Ej: Seguimiento de ejecución de estructura y revisión de plazos…"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Decisiones tomadas <span style="color:var(--light);font-weight:300;">(una por línea)</span></label>
+            <textarea class="form-input" id="acta-decisiones" rows="3" style="resize:vertical;" placeholder="Se decide continuar con el encofrado de pilares&#10;Se aprueba el cambio de material en solera"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Puntos pendientes <span style="color:var(--light);font-weight:300;">(uno por línea)</span></label>
+            <textarea class="form-input" id="acta-pendientes" rows="3" style="resize:vertical;" placeholder="Pendiente confirmación de medidas por arquitecto&#10;Pendiente entrega de material de cubierta"></textarea>
           </div>
         </div>
 
@@ -897,10 +986,10 @@
         <!-- RESUMEN INFO -->
         <div class="info-card">
           <div class="info-card-title">Resumen del report</div>
-          <div class="info-row"><span class="info-row-label">Obra</span><span class="info-row-val">Rancho Manolo</span></div>
-          <div class="info-row"><span class="info-row-label">Semana</span><span class="info-row-val">11–17 mayo 2026</span></div>
-          <div class="info-row"><span class="info-row-label">Entradas</span><span class="info-row-val">4 jornadas</span></div>
-          <div class="info-row"><span class="info-row-label">Fotos</span><span class="info-row-val">9 fotografías</span></div>
+          <div class="info-row"><span class="info-row-label">Obra</span><span class="info-row-val" id="info-obra">—</span></div>
+          <div class="info-row"><span class="info-row-label">Semana</span><span class="info-row-val" id="info-semana">—</span></div>
+          <div class="info-row"><span class="info-row-label">Partes</span><span class="info-row-val" id="info-partes">—</span></div>
+          <div class="info-row"><span class="info-row-label">Fotos</span><span class="info-row-val" id="info-fotos">—</span></div>
           <div class="info-row"><span class="info-row-label">Estado OCR</span><span class="info-row-val"><span class="status-badge badge-ok">✓ Confianza alta</span></span></div>
         </div>
 
@@ -952,7 +1041,9 @@
 
       <!-- REPORT PREVIEW -->
       <div class="s3-preview">
-        <div class="report-card">
+
+        <!-- REPORT SEMANAL -->
+        <div class="report-card" id="report-card">
           <div class="rc-header">
             <div>
               <div class="rc-brand">Mili Construcciones</div>
@@ -960,19 +1051,19 @@
             </div>
             <div>
               <div class="rc-label">Report semanal</div>
-              <div class="rc-date">18 mayo 2026</div>
+              <div class="rc-date" id="rc-date">—</div>
             </div>
           </div>
 
           <div class="rc-meta">
-            <div class="rc-meta-field"><div class="rc-meta-label">Obra</div><div class="rc-meta-val">Rancho Manolo</div></div>
-            <div class="rc-meta-field"><div class="rc-meta-label">Semana</div><div class="rc-meta-val">11 – 17 mayo 2026</div></div>
-            <div class="rc-meta-field"><div class="rc-meta-label">Jefe de obra</div><div class="rc-meta-val">Domingo</div></div>
+            <div class="rc-meta-field"><div class="rc-meta-label">Obra</div><div class="rc-meta-val" id="rc-obra">—</div></div>
+            <div class="rc-meta-field"><div class="rc-meta-label">Semana</div><div class="rc-meta-val" id="rc-semana">—</div></div>
+            <div class="rc-meta-field"><div class="rc-meta-label">Jefe de obra</div><div class="rc-meta-val" id="rc-encargado">Domingo</div></div>
           </div>
 
           <div class="rc-estado">
             <div class="rc-estado-label">Estado</div>
-            <div class="rc-estado-text" id="preview-estado">Hormigonado de solera P.P. y limpieza piscina en ejecución.</div>
+            <div class="rc-estado-text" id="preview-estado">—</div>
           </div>
 
           <div class="rc-section">
@@ -980,7 +1071,7 @@
               <span class="rc-section-num">01</span>
               <span class="rc-section-title">Resumen ejecutivo</span>
             </div>
-            <p class="rc-resumen">Durante la semana del 11 al 17 de mayo el equipo ha llevado a cabo trabajos intensivos de estructura, drenaje y hormigonado. El día 11 se ejecutó la excavación en zona de garaje, nivelación, zanjas de drenaje fecal, encofrado y hormigonado de pilar P.P. con apoyo al herrero para montaje de andamio y colocación de jácena. El día 12 se montó el tubo de drenaje con tapado de grava, tela y tierra, y se colocó el mallazo y encofrado. El día 13 se hormigonó la solera de P.P. y se limpió la zona de piscina.</p>
+            <p class="rc-resumen" id="rc-resumen" style="color:var(--light);">El resumen se generará automáticamente con IA a partir de los partes de obra.</p>
           </div>
 
           <div class="rc-section">
@@ -990,11 +1081,8 @@
             </div>
             <table class="rc-table">
               <thead><tr><th></th><th>Fecha</th><th>Descripción</th><th>Op.</th></tr></thead>
-              <tbody>
-                <tr><td class="rc-td-num">1</td><td class="rc-td-fecha">11 may</td><td>Excavación garaje, zanjas drenaje fecal, encofrado y hormigonado pilar P.P. Apoyo herrero.</td><td>4 op.</td></tr>
-                <tr><td class="rc-td-num">2</td><td class="rc-td-fecha">12 may</td><td>Drenaje 2 tiradas con grava/tela/tierra. Apuntalar P.B., mallazo y encofrado. Desencofrar pilar.</td><td>3 op.</td></tr>
-                <tr><td class="rc-td-num">3</td><td class="rc-td-fecha">13 may</td><td>Hormigón solera P.P. Limpieza piscina. Apuntalar, encofrar pilar, encamillar, marcar zona nueva.</td><td>4 op.</td></tr>
-                <tr><td class="rc-td-num">4</td><td class="rc-td-fecha">14 may</td><td>Jardinera junto silo. Hormigonado pilar 3, medidas zona nueva, encamillar, picar con compresor.</td><td>3 op.</td></tr>
+              <tbody id="rc-trabajos-body">
+                <tr><td colspan="4" style="color:var(--light);text-align:center;padding:1rem 0;font-size:0.7rem;">Los trabajos se extraerán de los partes con OCR.</td></tr>
               </tbody>
             </table>
           </div>
@@ -1005,13 +1093,9 @@
               <span class="rc-section-title">Fotografías del proceso</span>
             </div>
             <div class="rc-fotos" id="rc-fotos-grid">
-              <!-- filled by JS or placeholders -->
               <div class="rc-foto" style="background:#d8d4cc;"></div>
               <div class="rc-foto" style="background:#ccc9c0;"></div>
               <div class="rc-foto" style="background:#d0cdc6;"></div>
-              <div class="rc-foto" style="background:#c8c4bc;"></div>
-              <div class="rc-foto" style="background:#d4d0c8;"></div>
-              <div class="rc-foto" style="background:#ccc8bf;"></div>
             </div>
           </div>
 
@@ -1021,11 +1105,80 @@
               <div class="rc-cargo">Gerente · Mili Construcciones</div>
             </div>
             <div class="rc-footer-info">
-              Report generado el 18/05/2026<br>
-              Obra: Rancho Manolo · Semana 20
+              Report generado el <span id="rc-footer-date">—</span><br>
+              Obra: <span id="rc-footer-obra">—</span> · <span id="rc-footer-semana">—</span>
             </div>
           </div>
         </div>
+
+        <!-- ACTA TÉCNICA -->
+        <div class="report-card" id="acta-card" style="display:none;">
+          <div class="rc-header">
+            <div>
+              <div class="rc-brand">Mili Construcciones</div>
+              <div class="rc-brand-sub">Dirección y ejecución de obras</div>
+            </div>
+            <div>
+              <div class="rc-label">Acta técnica</div>
+              <div class="rc-date" id="acta-rc-date">—</div>
+            </div>
+          </div>
+
+          <div class="rc-meta">
+            <div class="rc-meta-field"><div class="rc-meta-label">Obra</div><div class="rc-meta-val" id="acta-rc-obra">—</div></div>
+            <div class="rc-meta-field"><div class="rc-meta-label">Tipo</div><div class="rc-meta-val">Reunión técnica</div></div>
+            <div class="rc-meta-field"><div class="rc-meta-label">Fecha</div><div class="rc-meta-val" id="acta-rc-fecha">—</div></div>
+          </div>
+
+          <div class="rc-estado">
+            <div class="rc-estado-label">Objeto</div>
+            <div class="rc-estado-text" id="acta-objeto-preview">Reunión de seguimiento técnico de obra.</div>
+          </div>
+
+          <div class="rc-section">
+            <div class="rc-section-hdr">
+              <span class="rc-section-num">01</span>
+              <span class="rc-section-title">Asistentes</span>
+            </div>
+            <div class="rc-asistente-grid" id="preview-asistentes">
+              <div class="rc-asistente principal"><span class="rc-asistente-nombre">Mili</span><span class="rc-asistente-rol">Gerente</span></div>
+              <div class="rc-asistente principal"><span class="rc-asistente-nombre">Domingo</span><span class="rc-asistente-rol">Jefe de obra</span></div>
+              <div class="rc-asistente"><span class="rc-asistente-nombre">Bernat Parera</span><span class="rc-asistente-rol">Arquitecto</span></div>
+            </div>
+          </div>
+
+          <div class="rc-section">
+            <div class="rc-section-hdr">
+              <span class="rc-section-num">02</span>
+              <span class="rc-section-title">Decisiones tomadas</span>
+            </div>
+            <div id="preview-decisiones">
+              <div class="rc-decision" style="color:var(--light);">Sin decisiones registradas.</div>
+            </div>
+          </div>
+
+          <div class="rc-section">
+            <div class="rc-section-hdr">
+              <span class="rc-section-num">03</span>
+              <span class="rc-section-title">Puntos pendientes</span>
+            </div>
+            <div id="preview-pendientes">
+              <div class="rc-pendiente" style="color:var(--light);">Sin puntos pendientes.</div>
+            </div>
+          </div>
+
+          <div class="rc-footer">
+            <div>
+              <div class="rc-firma">Mili —</div>
+              <div class="rc-cargo">Gerente · Mili Construcciones</div>
+            </div>
+            <div class="rc-footer-info">
+              Acta generada el <span id="acta-rc-footer-date">—</span><br>
+              Obra: <span id="acta-rc-footer-obra">—</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -1087,14 +1240,82 @@
   let partes = [];
   let fotos = [];
 
+  // ── INIT ──
+  document.addEventListener('DOMContentLoaded', () => {
+    setDefaultDates();
+    loadObras();
+    setupTipoDoc();
+  });
+
+  // ── DATES ──
+  function setDefaultDates() {
+    const today = new Date();
+    const lastSun = new Date(today);
+    lastSun.setDate(today.getDate() - today.getDay());
+    const lastMon = new Date(lastSun);
+    lastMon.setDate(lastSun.getDate() - 6);
+    document.getElementById('fecha-inicio').value = lastMon.toISOString().split('T')[0];
+    document.getElementById('fecha-fin').value = lastSun.toISOString().split('T')[0];
+  }
+
+  function formatSemana(inicio, fin) {
+    if (!inicio || !fin) return '—';
+    const fi = new Date(inicio + 'T12:00:00');
+    const ff = new Date(fin + 'T12:00:00');
+    const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    if (fi.getMonth() === ff.getMonth()) {
+      return `${fi.getDate()}–${ff.getDate()} ${months[ff.getMonth()]} ${ff.getFullYear()}`;
+    }
+    return `${fi.getDate()} ${months[fi.getMonth()]} – ${ff.getDate()} ${months[ff.getMonth()]} ${ff.getFullYear()}`;
+  }
+
+  function getWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  }
+
+  // ── OBRAS (localStorage) ──
+  function loadObras() {
+    const stored = localStorage.getItem('mili-obras');
+    if (stored) {
+      populateObrasSelect(JSON.parse(stored));
+    } else {
+      fetch('/api/obras')
+        .then(r => r.json())
+        .then(data => {
+          const list = data.obras || data;
+          localStorage.setItem('mili-obras', JSON.stringify(list));
+          populateObrasSelect(list);
+        })
+        .catch(() => {});
+    }
+  }
+
+  function populateObrasSelect(obras) {
+    const sel = document.getElementById('obra-nombre');
+    Array.from(sel.options).forEach(opt => {
+      if (opt.value !== '' && opt.value !== 'nueva') opt.remove();
+    });
+    const nuevaOpt = sel.querySelector('option[value="nueva"]');
+    const activas = obras.filter(o => o.activa !== false);
+    activas.forEach(obra => {
+      const opt = document.createElement('option');
+      opt.value = obra.nombre;
+      opt.textContent = obra.nombre;
+      sel.insertBefore(opt, nuevaOpt);
+    });
+    if (activas.length > 0) sel.value = activas[0].nombre;
+  }
+
+  // ── NAVIGATION ──
   function goTo(n) {
     if (n === currentScreen) return;
+    if (n === 2 && !validateForm()) return;
 
-    // Update screens
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-' + n).classList.add('active');
-
-    // Update nav
     document.querySelectorAll('.nav-step').forEach((s, i) => {
       s.classList.remove('active', 'done');
       if (i + 1 < n) s.classList.add('done');
@@ -1102,20 +1323,158 @@
     });
 
     currentScreen = n;
-
     if (n === 2) runProcessing();
+    if (n === 3) updatePreview();
   }
 
-  // ── PROCESSING SIMULATION ──
+  // ── VALIDATION ──
+  function validateForm() {
+    clearErrors();
+    let valid = true;
+
+    const obra = document.getElementById('obra-nombre').value;
+    if (!obra) {
+      showFieldError('obra-nombre', 'Selecciona una obra');
+      valid = false;
+    }
+
+    const fi = document.getElementById('fecha-inicio').value;
+    const ff = document.getElementById('fecha-fin').value;
+    if (!fi || !ff) {
+      showFieldError('fecha-inicio', 'Introduce ambas fechas');
+      valid = false;
+    } else if (fi >= ff) {
+      showFieldError('fecha-inicio', 'La fecha de inicio debe ser anterior al fin de semana');
+      valid = false;
+    }
+
+    if (partes.length === 0) {
+      showDropError('drop-partes', 'Sube al menos un parte de obra');
+      valid = false;
+    }
+
+    return valid;
+  }
+
+  function showFieldError(id, msg) {
+    const el = document.getElementById(id);
+    el.classList.add('error');
+    const err = document.createElement('div');
+    err.className = 'field-error-msg';
+    err.textContent = msg;
+    el.parentNode.appendChild(err);
+  }
+
+  function showDropError(id, msg) {
+    const el = document.getElementById(id);
+    el.classList.add('error');
+    const err = document.createElement('div');
+    err.className = 'field-error-msg';
+    err.textContent = msg;
+    el.parentNode.insertBefore(err, el.nextSibling);
+  }
+
+  function clearErrors() {
+    document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+    document.querySelectorAll('.field-error-msg').forEach(el => el.remove());
+  }
+
+  // ── TIPO DOC ──
+  function setupTipoDoc() {
+    document.querySelectorAll('input[name="tipo-doc"]').forEach(r => r.addEventListener('change', onTipoDocChange));
+    onTipoDocChange();
+  }
+
+  function onTipoDocChange() {
+    const val = document.querySelector('input[name="tipo-doc"]:checked').value;
+    document.querySelectorAll('.tipo-doc-label').forEach(label => {
+      const r = label.querySelector('input[type="radio"]');
+      label.classList.toggle('selected', r.value === val);
+      label.classList.toggle('unselected', r.value !== val);
+    });
+    const actaFields = document.getElementById('acta-fields');
+    if (actaFields) actaFields.style.display = val === 'acta' ? 'block' : 'none';
+  }
+
+  // ── PREVIEW ──
+  function updatePreview() {
+    const obra = document.getElementById('obra-nombre').value || '—';
+    const fi = document.getElementById('fecha-inicio').value;
+    const ff = document.getElementById('fecha-fin').value;
+    const encargado = document.getElementById('encargado').value || 'Domingo';
+    const tipoDoc = document.querySelector('input[name="tipo-doc"]:checked').value;
+    const semana = formatSemana(fi, ff);
+    const today = new Date();
+    const todayStr = today.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+    const todayShort = today.toLocaleDateString('es-ES');
+    const numSemana = fi ? getWeekNumber(new Date(fi + 'T12:00:00')) : '—';
+
+    // Info card sidebar
+    document.getElementById('info-obra').textContent = obra;
+    document.getElementById('info-semana').textContent = semana;
+    document.getElementById('info-partes').textContent = partes.length + (partes.length === 1 ? ' parte' : ' partes');
+    document.getElementById('info-fotos').textContent = fotos.length + (fotos.length === 1 ? ' fotografía' : ' fotografías');
+
+    // Toggle cards
+    document.getElementById('report-card').style.display = tipoDoc === 'report' ? '' : 'none';
+    document.getElementById('acta-card').style.display = tipoDoc === 'acta' ? '' : 'none';
+
+    if (tipoDoc === 'report') {
+      document.getElementById('rc-date').textContent = todayStr;
+      document.getElementById('rc-obra').textContent = obra;
+      document.getElementById('rc-semana').textContent = semana;
+      document.getElementById('rc-encargado').textContent = encargado;
+      document.getElementById('rc-footer-date').textContent = todayShort;
+      document.getElementById('rc-footer-obra').textContent = obra;
+      document.getElementById('rc-footer-semana').textContent = 'Semana ' + numSemana;
+
+      // Fotos reales en preview
+      const grid = document.getElementById('rc-fotos-grid');
+      if (fotos.length > 0) {
+        grid.innerHTML = fotos.map(f => {
+          const url = URL.createObjectURL(f);
+          return `<div class="rc-foto"><img src="${url}" alt=""></div>`;
+        }).join('');
+      }
+    } else {
+      const objeto = document.getElementById('acta-objeto').value || 'Reunión de seguimiento técnico de obra.';
+      document.getElementById('acta-rc-date').textContent = todayStr;
+      document.getElementById('acta-rc-obra').textContent = obra;
+      document.getElementById('acta-rc-fecha').textContent = todayStr;
+      document.getElementById('acta-objeto-preview').textContent = objeto;
+      document.getElementById('acta-rc-footer-date').textContent = todayShort;
+      document.getElementById('acta-rc-footer-obra').textContent = obra;
+
+      const decisiones = (document.getElementById('acta-decisiones').value || '').split('\n').filter(l => l.trim());
+      document.getElementById('preview-decisiones').innerHTML = decisiones.length > 0
+        ? decisiones.map(d => `<div class="rc-decision">${d.trim()}</div>`).join('')
+        : '<div class="rc-decision" style="color:var(--light);">Sin decisiones registradas.</div>';
+
+      const pendientes = (document.getElementById('acta-pendientes').value || '').split('\n').filter(l => l.trim());
+      document.getElementById('preview-pendientes').innerHTML = pendientes.length > 0
+        ? pendientes.map(p => `<div class="rc-pendiente">${p.trim()}</div>`).join('')
+        : '<div class="rc-pendiente" style="color:var(--light);">Sin puntos pendientes.</div>';
+    }
+  }
+
+  // ── LIVE EDIT ──
+  function updateEstado(val) {
+    document.getElementById('preview-estado').textContent = val || '—';
+  }
+
+  // ── PROCESSING ──
   function runProcessing() {
+    document.querySelectorAll('.proc-step').forEach(el => {
+      el.classList.remove('doing', 'done-step');
+      el.querySelector('.proc-step-dot').style.background = '';
+    });
+
     const steps = ['proc-1','proc-2','proc-3','proc-4','proc-5'];
     let i = 0;
-
     function next() {
       if (i > 0) {
         document.getElementById(steps[i-1]).classList.remove('doing');
         document.getElementById(steps[i-1]).classList.add('done-step');
-        document.getElementById(steps[i-1]).querySelector('.proc-step-dot').style.background = 'var(--green)';
       }
       if (i < steps.length) {
         document.getElementById(steps[i]).classList.add('doing');
@@ -1131,18 +1490,14 @@
   // ── FILE HANDLING ──
   function addPartes(files) {
     Array.from(files).forEach(f => {
-      if (!partes.find(p => p.name === f.name)) {
-        partes.push(f);
-      }
+      if (!partes.find(p => p.name === f.name)) partes.push(f);
     });
     renderPartes();
   }
 
   function addFotos(files) {
     Array.from(files).forEach(f => {
-      if (!fotos.find(p => p.name === f.name)) {
-        fotos.push(f);
-      }
+      if (!fotos.find(p => p.name === f.name)) fotos.push(f);
     });
     renderFotos();
   }
@@ -1158,29 +1513,21 @@
     document.getElementById('counter-partes').textContent = partes.length;
   }
 
-  function removeParte(i) {
-    partes.splice(i, 1);
-    renderPartes();
-  }
+  function removeParte(i) { partes.splice(i, 1); renderPartes(); }
 
   function renderFotos() {
     const grid = document.getElementById('fotos-preview');
     grid.innerHTML = fotos.map((f, i) => {
       const url = URL.createObjectURL(f);
-      return `
-        <div class="foto-thumb">
-          <img src="${url}" alt="${f.name}">
-          <div class="foto-thumb-remove" onclick="removeFoto(${i})">✕</div>
-        </div>
-      `;
+      return `<div class="foto-thumb">
+        <img src="${url}" alt="${f.name}">
+        <div class="foto-thumb-remove" onclick="removeFoto(${i})">✕</div>
+      </div>`;
     }).join('');
     document.getElementById('counter-fotos').textContent = fotos.length;
   }
 
-  function removeFoto(i) {
-    fotos.splice(i, 1);
-    renderFotos();
-  }
+  function removeFoto(i) { fotos.splice(i, 1); renderFotos(); }
 
   // ── DRAG AND DROP ──
   ['drop-partes', 'drop-fotos'].forEach(id => {
@@ -1190,22 +1537,13 @@
     zone.addEventListener('drop', e => {
       e.preventDefault();
       zone.classList.remove('dragover');
-      const fn = id === 'drop-partes' ? addPartes : addFotos;
-      fn(e.dataTransfer.files);
+      (id === 'drop-partes' ? addPartes : addFotos)(e.dataTransfer.files);
     });
   });
 
-  // ── LIVE EDIT ──
-  function updateEstado(val) {
-    document.getElementById('preview-estado').textContent = val;
-  }
-
   // ── OBRA SELECT ──
   document.getElementById('obra-nombre').addEventListener('change', function() {
-    if (this.value === 'nueva') {
-      this.value = '';
-      openModal();
-    }
+    if (this.value === 'nueva') { this.value = ''; openModal(); }
   });
 
   function openModal() {
@@ -1214,11 +1552,8 @@
   }
 
   function closeModalBtn() {
-    const overlay = document.getElementById('modal-overlay');
-    overlay.classList.remove('open');
-    // Reset to previous value if nothing selected
-    const sel = document.getElementById('obra-nombre');
-    if (!sel.value) sel.value = '';
+    document.getElementById('modal-overlay').classList.remove('open');
+    if (!document.getElementById('obra-nombre').value) document.getElementById('obra-nombre').value = '';
   }
 
   function closeModal(e) {
@@ -1228,37 +1563,45 @@
   function guardarObra() {
     const nombre = document.getElementById('nueva-obra-nombre').value.trim();
     if (!nombre) {
-      document.getElementById('nueva-obra-nombre').style.borderColor = 'var(--red)';
+      document.getElementById('nueva-obra-nombre').classList.add('error');
       document.getElementById('nueva-obra-nombre').focus();
       return;
     }
-    document.getElementById('nueva-obra-nombre').style.borderColor = '';
 
-    // Add to select
+    const nuevaObra = {
+      id: nombre.toLowerCase().replace(/\s+/g, '-'),
+      nombre,
+      direccion: document.getElementById('nueva-obra-direccion').value.trim(),
+      promotor: document.getElementById('nueva-obra-promotor').value.trim(),
+      tipo: document.getElementById('nueva-obra-tipo').value,
+      arquitecto: document.getElementById('nueva-obra-arquitecto').value.trim() || 'Bernat Parera',
+      activa: true,
+      creada: new Date().toISOString().split('T')[0],
+    };
+
+    const stored = localStorage.getItem('mili-obras');
+    const obras = stored ? JSON.parse(stored) : [];
+    obras.push(nuevaObra);
+    localStorage.setItem('mili-obras', JSON.stringify(obras));
+
     const sel = document.getElementById('obra-nombre');
     const opt = document.createElement('option');
-    opt.value = nombre;
-    opt.textContent = nombre;
-    opt.selected = true;
-    // Insert before the "Nueva obra" option
+    opt.value = nombre; opt.textContent = nombre; opt.selected = true;
     sel.insertBefore(opt, sel.querySelector('option[value="nueva"]'));
     sel.value = nombre;
 
-    // Close modal and clear fields
     document.getElementById('modal-overlay').classList.remove('open');
-    document.getElementById('nueva-obra-nombre').value = '';
-    document.getElementById('nueva-obra-direccion').value = '';
-    document.getElementById('nueva-obra-promotor').value = '';
+    ['nueva-obra-nombre','nueva-obra-direccion','nueva-obra-promotor'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
     document.getElementById('nueva-obra-arquitecto').value = 'Bernat Parera';
 
     showToast(`✓ Obra "${nombre}" creada`);
   }
 
-  // Enter key in modal
   document.getElementById('nueva-obra-nombre').addEventListener('keydown', e => {
     if (e.key === 'Enter') guardarObra();
   });
-
 
   function showToast(msg) {
     const t = document.getElementById('toast');
