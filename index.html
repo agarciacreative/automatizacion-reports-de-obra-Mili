@@ -998,7 +998,7 @@
           <div class="info-card-title">Ajustes rápidos</div>
           <div class="edit-field">
             <div class="edit-label">Estado de la obra</div>
-            <input class="edit-input" value="Hormigonado de solera P.P. y limpieza piscina en ejecución." oninput="updateEstado(this.value)">
+            <input class="edit-input" id="estado-input" placeholder="Describe el estado actual de la obra…" oninput="updateEstado(this.value)">
           </div>
           <div class="edit-field">
             <div class="edit-label">Nota adicional</div>
@@ -1035,7 +1035,7 @@
         </div>
 
         <div style="margin-top:auto;">
-          <button class="btn-ghost" onclick="goTo(1)">← Nuevo report</button>
+          <button class="btn-ghost" onclick="resetApp()">← Nuevo report</button>
         </div>
       </div>
 
@@ -1239,6 +1239,7 @@
   let currentScreen = 1;
   let partes = [];
   let fotos = [];
+  let jobResult = null;
 
   // ── INIT ──
   document.addEventListener('DOMContentLoaded', () => {
@@ -1428,6 +1429,26 @@
       document.getElementById('rc-footer-obra').textContent = obra;
       document.getElementById('rc-footer-semana').textContent = 'Semana ' + numSemana;
 
+      // Datos del backend si están disponibles
+      if (jobResult) {
+        document.getElementById('rc-resumen').textContent = jobResult.resumen || '—';
+        document.getElementById('rc-resumen').style.color = '';
+        renderTrabajosTable(jobResult.trabajos);
+        // Badge de confianza
+        const badge = document.querySelector('#info-fotos').closest('.info-card').querySelector('.status-badge');
+        if (badge) {
+          const conf = jobResult.confianza;
+          badge.className = 'status-badge ' + (conf === 'alta' ? 'badge-ok' : conf === 'media' ? 'badge-warn' : 'badge-warn');
+          badge.textContent = conf === 'alta' ? '✓ Confianza alta' : conf === 'media' ? '⚠ Confianza media' : '⚠ Confianza baja';
+        }
+        // Prefill estado si viene del backend
+        const estadoInput = document.getElementById('estado-input');
+        if (estadoInput && !estadoInput.value && jobResult.estado) {
+          estadoInput.value = jobResult.estado;
+          updateEstado(jobResult.estado);
+        }
+      }
+
       // Fotos reales en preview
       const grid = document.getElementById('rc-fotos-grid');
       if (fotos.length > 0) {
@@ -1462,29 +1483,66 @@
     document.getElementById('preview-estado').textContent = val || '—';
   }
 
-  // ── PROCESSING ──
-  function runProcessing() {
+  // ── PROCESSING (conectado al backend) ──
+  async function runProcessing() {
     document.querySelectorAll('.proc-step').forEach(el => {
       el.classList.remove('doing', 'done-step');
       el.querySelector('.proc-step-dot').style.background = '';
     });
+    setStepUI(1);
 
-    const steps = ['proc-1','proc-2','proc-3','proc-4','proc-5'];
-    let i = 0;
-    function next() {
-      if (i > 0) {
-        document.getElementById(steps[i-1]).classList.remove('doing');
-        document.getElementById(steps[i-1]).classList.add('done-step');
-      }
-      if (i < steps.length) {
-        document.getElementById(steps[i]).classList.add('doing');
-        i++;
-        setTimeout(next, 900 + Math.random() * 400);
-      } else {
-        setTimeout(() => goTo(3), 600);
-      }
+    try {
+      const formData = new FormData();
+      formData.append('obra',        document.getElementById('obra-nombre').value);
+      formData.append('fechaInicio', document.getElementById('fecha-inicio').value);
+      formData.append('fechaFin',    document.getElementById('fecha-fin').value);
+      formData.append('encargado',   document.getElementById('encargado').value);
+      formData.append('tipoDoc',     document.querySelector('input[name="tipo-doc"]:checked').value);
+      partes.forEach(f => formData.append('partes', f));
+      fotos.forEach(f  => formData.append('fotos',  f));
+
+      const res = await fetch('/api/generate', { method: 'POST', body: formData });
+      const { jobId, error } = await res.json();
+      if (error) throw new Error(error);
+
+      const evtSource = new EventSource(`/api/progress/${jobId}`);
+
+      evtSource.onmessage = e => {
+        const data = JSON.parse(e.data);
+        if (data.error) {
+          evtSource.close();
+          showToast('Error: ' + data.error);
+          goTo(1);
+          return;
+        }
+        if (data.step) setStepUI(data.step);
+        if (data.done) {
+          evtSource.close();
+          jobResult = data.result;
+          setTimeout(() => goTo(3), 600);
+        }
+      };
+
+      evtSource.onerror = () => {
+        evtSource.close();
+        showToast('Error de conexión con el servidor');
+        goTo(1);
+      };
+
+    } catch (err) {
+      showToast('Error: ' + err.message);
+      goTo(1);
     }
-    next();
+  }
+
+  function setStepUI(currentStep) {
+    const steps = ['proc-1','proc-2','proc-3','proc-4','proc-5'];
+    steps.forEach((id, idx) => {
+      const el = document.getElementById(id);
+      el.classList.remove('doing', 'done-step');
+      if (idx + 1 < currentStep)  el.classList.add('done-step');
+      if (idx + 1 === currentStep) el.classList.add('doing');
+    });
   }
 
   // ── FILE HANDLING ──
@@ -1528,6 +1586,24 @@
   }
 
   function removeFoto(i) { fotos.splice(i, 1); renderFotos(); }
+
+  function renderTrabajosTable(trabajos) {
+    const tbody = document.getElementById('rc-trabajos-body');
+    if (!tbody) return;
+    if (!trabajos || trabajos.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--light);text-align:center;padding:1rem 0;font-size:0.7rem;">No se extrajeron trabajos de los partes.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = trabajos.map((t, i) => {
+      const numOps = t.operarios ? t.operarios.length : 0;
+      return `<tr>
+        <td class="rc-td-num">${i + 1}</td>
+        <td class="rc-td-fecha">${t.fecha || '—'}</td>
+        <td>${t.descripcion || '—'}</td>
+        <td>${numOps} op.</td>
+      </tr>`;
+    }).join('');
+  }
 
   // ── DRAG AND DROP ──
   ['drop-partes', 'drop-fotos'].forEach(id => {
@@ -1602,6 +1678,17 @@
   document.getElementById('nueva-obra-nombre').addEventListener('keydown', e => {
     if (e.key === 'Enter') guardarObra();
   });
+
+  function resetApp() {
+    jobResult = null;
+    partes = [];
+    fotos = [];
+    renderPartes();
+    renderFotos();
+    document.getElementById('estado-input').value = '';
+    document.getElementById('preview-estado').textContent = '—';
+    goTo(1);
+  }
 
   function showToast(msg) {
     const t = document.getElementById('toast');
