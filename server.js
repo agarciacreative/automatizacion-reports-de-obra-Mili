@@ -26,6 +26,13 @@ app.use('/output', express.static(path.join(__dirname, 'output')));
 app.use('/api/obras', obrasRouter);
 app.use('/api', generateRouter);
 
+// Error handler global — devuelve JSON en lugar de HTML para que el frontend pueda parsear
+app.use((err, req, res, next) => {
+  console.error('[Express error]', err.message);
+  if (res.headersSent) return next(err);
+  res.status(err.status || 500).json({ error: err.message || 'Error interno del servidor' });
+});
+
 app.listen(PORT, () => {
   console.log(`Mili Reports corriendo en http://localhost:${PORT}`);
 });

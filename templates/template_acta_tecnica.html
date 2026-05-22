@@ -1,129 +1,535 @@
 <!DOCTYPE html>
+<!--
+  PLANTILLA ACTA DE OBRA — Mili Construcciones
+  Variables de sustitución:
+    {{FECHA_DISPLAY}}        "21 de mayo de 2026"
+    {{OBRA_NOMBRE}}          "Rancho Manolo"
+    {{UBICACION}}            "Polígono 4 · Parcelas 845 · Manacor"
+    {{PROMOTOR}}             "AF Can Henares, S.L."
+    {{PROXIMA_REUNION}}      "26 de mayo de 2026"
+    {{FECHA_FOOTER}}         "21/05/2026"
+    {{ASISTENTES_HTML}}      bloque de <span class="asist-pill">
+    {{DECISIONES_HTML}}      bloque de <div class="item">
+    {{PENDIENTES_HTML}}      bloque de <div class="item">
+    {{COUNT_DECISIONES}}     "2 puntos"
+    {{COUNT_PENDIENTES}}     "3 puntos"
+    {{FOTOS_OBRA_HTML}}      bloque de <div class="photo-card">
+    {{FOTOS_PLANOS_HTML}}    bloque de <div class="photo-card">
+    {{GRID_OBRA}}            "photos-cols-1 | photos-cols-2 | photos-cols-3"
+    {{GRID_PLANOS}}          "photos-cols-1 | photos-cols-2 | photos-cols-3"
+    {{SECTION_OBRA_STYLE}}   "" o "display:none;"
+    {{SECTION_PLANOS_STYLE}} "" o "display:none;"
+    {{SECTION_FOTOS_STYLE}}  "" o "display:none;"
+-->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Acta de Reunión Técnica — {{OBRA_NOMBRE}}</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: "DM Sans", sans-serif;
-    background: #f5f3ef;
-    color: #1a1a18;
-    padding: 0 2rem 2rem 2rem;
-    max-width: 860px;
-    margin: 0 auto;
-  }
-  .no-break { page-break-inside: avoid; break-inside: avoid; }
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap');
 
-  /* HEADER */
-  .header { display: grid; grid-template-columns: 1fr auto; align-items: start; border-bottom: 2px solid #1a1a18; padding: 1.5rem 0; margin-bottom: 2rem; }
-  .brand-name { font-family: "DM Serif Display", serif; font-size: 2rem; letter-spacing: -0.02em; line-height: 1; }
-  .brand-sub { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: #7a7a72; margin-top: 0.2rem; }
-  .report-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #7a7a72; margin-bottom: 0.3rem; text-align: right; }
-  .report-date { font-family: "DM Serif Display", serif; font-size: 1.1rem; text-align: right; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* OBRA INFO */
-  .obra-info { display: grid; grid-template-columns: 1fr 1fr 1fr; border: 1.5px solid #1a1a18; margin-bottom: 2rem; }
-  .obra-field { padding: 0.9rem 1.2rem; border-right: 1.5px solid #1a1a18; }
-  .obra-field:last-child { border-right: none; }
-  .obra-field-label { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #7a7a72; margin-bottom: 0.3rem; }
-  .obra-field-value { font-size: 0.9rem; font-weight: 500; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #f5f3ef;
+  color: #1a1a18;
+  font-size: 11px;
+}
 
-  /* ESTADO */
-  .estado-section { background: #1a1a18; color: #f5f3ef; padding: 1.2rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1.5rem; }
-  .estado-label { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #9a9a8a; white-space: nowrap; }
-  .estado-text { font-family: "DM Serif Display", serif; font-size: 1rem; font-style: italic; color: #f5f3ef; line-height: 1.4; }
+/* ── HEADER ── */
+.header {
+  background: #1a1a18;
+  display: flex;
+  height: 72px;
+}
+.header-accent {
+  width: 6px;
+  background: #d4a853;
+  flex-shrink: 0;
+}
+.header-inner {
+  flex: 1;
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.brand-block .brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 24px;
+  color: #f5f3ef;
+  letter-spacing: 0.3px;
+  line-height: 1;
+}
+.brand-block .sub {
+  font-size: 8.5px;
+  color: #d4a853;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  margin-top: 5px;
+}
+.doc-block { text-align: right; }
+.doc-block .doc-type {
+  font-family: 'DM Serif Display', serif;
+  font-size: 14px;
+  color: #f5f3ef;
+  letter-spacing: 0.5px;
+}
+.doc-block .doc-date {
+  font-size: 9px;
+  color: #a09a8e;
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
 
-  /* SECTIONS */
-  .section { margin-bottom: 2rem; }
-  .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #d0cdc7; }
-  .section-number { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; color: #aaa; }
-  .section-title { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #1a1a18; }
+/* ── INFO BAND ── */
+.info-band {
+  background: #252523;
+  padding: 0 32px 0 38px;
+  display: flex;
+  border-bottom: 1px solid #3a3a38;
+}
+.info-cell {
+  padding: 11px 24px 11px 0;
+  margin-right: 24px;
+  border-right: 1px solid #3a3a38;
+  flex: 1;
+}
+.info-cell:last-child { border-right: none; margin-right: 0; }
+.info-label {
+  font-size: 7px;
+  color: #d4a853;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.info-value {
+  font-size: 10.5px;
+  color: #f5f3ef;
+  font-weight: 500;
+}
 
-  /* ASISTENTES */
-  .asistentes { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-  .asistente-badge { display: inline-block; background: #e8e5df; border-radius: 2px; padding: 0.25rem 0.7rem; font-size: 0.78rem; font-weight: 500; }
-  .asistente-badge.principal { background: #1a1a18; color: #f5f3ef; }
-  .asistente-role { font-weight: 300; font-size: 0.72rem; }
+/* ── ASISTENTES ── */
+.asist-band {
+  background: #1a1a18;
+  padding: 8px 32px 8px 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid #d4a853;
+  flex-wrap: wrap;
+}
+.asist-label {
+  font-size: 7.5px;
+  color: #8a8478;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.asist-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #2d2d2b;
+  border: 1px solid #3d3d3b;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 9px;
+  color: #f5f3ef;
+}
+.asist-pill .role { color: #d4a853; font-size: 7.5px; }
 
-  /* DECISIONES */
-  .decision-list { display: flex; flex-direction: column; gap: 0.6rem; }
-  .decision-item { display: flex; gap: 1rem; padding: 0.9rem 1.1rem; background: #ffffff; border: 1px solid #d0cdc7; border-left: 3px solid #1a1a18; border-radius: 0 4px 4px 0; page-break-inside: avoid; break-inside: avoid; }
-  .decision-tag { font-size: 0.58rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #7a7a72; white-space: nowrap; margin-top: 2px; min-width: 100px; flex-shrink: 0; }
-  .decision-text { font-size: 0.85rem; font-weight: 300; color: #1a1a18; line-height: 1.55; }
-  .decision-text strong { font-weight: 500; }
+/* ── BODY PÁGINA 1 ── */
+.body { padding: 26px 32px 24px 38px; }
 
-  /* PENDIENTES */
-  .pendiente-list { display: flex; flex-direction: column; gap: 0.6rem; }
-  .pendiente-item { display: flex; gap: 1rem; padding: 0.9rem 1.1rem; background: #faf8f4; border: 1px solid #d0cdc7; border-left: 3px solid #c0a060; border-radius: 0 4px 4px 0; page-break-inside: avoid; break-inside: avoid; }
-  .pendiente-tag { font-size: 0.58rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #9a7a40; white-space: nowrap; margin-top: 2px; min-width: 100px; flex-shrink: 0; }
-  .pendiente-text { font-size: 0.85rem; font-weight: 300; color: #2a2a25; line-height: 1.55; }
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.section-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.icon-black { background: #1a1a18; color: #f5f3ef; }
+.icon-amber { background: #d4a853; color: #fff; }
+.section-label {
+  font-size: 7.5px;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: #8a8478;
+  flex: 1;
+  border-bottom: 1px solid #ddd9d0;
+  padding-bottom: 6px;
+}
+.section-count {
+  font-size: 8px;
+  color: #b0aa9e;
+  border-bottom: 1px solid #ddd9d0;
+  padding-bottom: 6px;
+  padding-left: 8px;
+}
+.spacer { height: 20px; }
 
-  /* FOOTER */
-  .footer { margin-top: 3rem; padding: 1.5rem 0 0 0; border-top: 2px solid #1a1a18; display: grid; grid-template-columns: 1fr 1fr; align-items: end; }
-  .footer-firma { font-family: "DM Serif Display", serif; font-size: 1.4rem; font-style: italic; color: #1a1a18; margin-bottom: 0.2rem; }
-  .footer-cargo { font-size: 0.65rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: #7a7a72; }
-  .footer-info { font-size: 0.72rem; color: #aaa; line-height: 1.7; text-align: right; }
+/* ── ITEMS ── */
+.item { display: flex; margin-bottom: 8px; }
+.item-stripe { width: 3px; border-radius: 2px 0 0 2px; flex-shrink: 0; }
+.stripe-black { background: #1a1a18; }
+.stripe-amber { background: #d4a853; }
+.item-content {
+  flex: 1;
+  padding: 11px 14px;
+  border-radius: 0 4px 4px 0;
+}
+.content-black { background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.content-amber  { background: #fdf6e8; box-shadow: 0 1px 3px rgba(212,168,83,0.08); }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.item-num-badge {
+  font-size: 7px;
+  font-weight: 700;
+  background: #f0ede7;
+  color: #8a8478;
+  padding: 1px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.item-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a1a18;
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+.item-body { font-size: 10px; color: #3a3a38; line-height: 1.65; }
+.item-body ul { padding-left: 14px; margin-top: 4px; }
+.item-body li { margin-bottom: 3px; }
+.tags { margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap; }
+.tag-fecha {
+  background: #d4a853;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.tag-resp {
+  background: #2d2d2b;
+  color: #f5f3ef;
+  font-size: 8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* ── FOOTER FIJO — aparece pegado al pie de CADA página ── */
+/*    position: fixed en modo print = se repite en todas las páginas           */
+/*    El margin bottom del PDF (36px) reserva espacio para no tapar contenido  */
+.footer-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  background: #1a1a18;
+  display: flex;
+  z-index: 999;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.footer-accent { width: 6px; background: #d4a853; flex-shrink: 0; }
+.footer-inner {
+  flex: 1;
+  padding: 0 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer-left {
+  font-family: 'DM Serif Display', serif;
+  font-style: italic;
+  font-size: 10px;
+  color: #6a6a68;
+}
+.footer-right {
+  font-size: 7.5px;
+  color: #4a4a48;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* ════════════════════════════════════════════════════════
+   PÁGINA 2 — REPORTAJE FOTOGRÁFICO
+   ════════════════════════════════════════════════════════ */
+
+.page-photos {
+  page-break-before: always;
+  background: #f5f3ef;
+}
+
+/* Mini-header idéntico al principal pero compacto */
+.page2-header {
+  background: #1a1a18;
+  display: flex;
+  height: 52px;
+}
+.page2-header-accent {
+  width: 6px;
+  background: #d4a853;
+  flex-shrink: 0;
+}
+.page2-header-inner {
+  flex: 1;
+  padding: 0 32px 0 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.page2-brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 16px;
+  color: #f5f3ef;
+  letter-spacing: 0.3px;
+}
+.page2-docinfo {
+  text-align: right;
+}
+.page2-docinfo-title {
+  font-size: 9px;
+  color: #8a8478;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.page2-docinfo-sub {
+  font-size: 7.5px;
+  color: #4a4a48;
+  margin-top: 3px;
+  letter-spacing: 1px;
+}
+
+/* Encabezado de sección fotos */
+.photos-section-hdr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 32px 12px 38px;
+}
+.photos-section-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: #d0cdc7;
+  line-height: 1;
+  min-width: 32px;
+  flex-shrink: 0;
+}
+.photos-section-title {
+  font-size: 7.5px;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: #8a8478;
+  flex: 1;
+  border-bottom: 1px solid #ddd9d0;
+  padding-bottom: 7px;
+}
+
+/* ── CSS GRID estricto: sin masonry, sin columnas variables ── */
+.photos-grid {
+  display: grid;
+  gap: 10px;
+  padding: 0 32px 0 38px;
+}
+
+/* Columnas */
+.photos-cols-1 { grid-template-columns: 1fr; }
+.photos-cols-2 { grid-template-columns: 1fr 1fr; }
+.photos-cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+/* ── Regla de altura: fija por config → object-fit:cover rellena 100% sin huecos ── */
+/* Fotos de obra */
+.fotos-obra.photos-cols-1 .photo-card img { height: 400px; }
+.fotos-obra.photos-cols-2 .photo-card img { height: 250px; }
+.fotos-obra.photos-cols-3 .photo-card img { height: 195px; }
+
+/* Planos (más anchos, altura menor) */
+.fotos-planos.photos-cols-1 .photo-card img { height: 340px; }
+.fotos-planos.photos-cols-2 .photo-card img { height: 200px; }
+.fotos-planos.photos-cols-3 .photo-card img { height: 165px; }
+
+/* ── Card ── */
+.photo-card {
+  border-radius: 6px;
+  overflow: hidden;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  background: #1a1a18;          /* fondo oscuro visible solo si imagen falla */
+  box-shadow: 0 2px 12px rgba(0,0,0,0.14);
+}
+
+.photo-card img {
+  width: 100%;
+  display: block;
+  object-fit: cover;            /* rellena el cell sin dejar espacio blanco */
+  object-position: center;
+}
+
+/* Caption minimalista */
+.photo-caption {
+  padding: 5px 9px;
+  font-size: 6.5px;
+  color: #9a9690;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  background: #ffffff;
+  border-top: 1px solid #ede9e2;
+  line-height: 1;
+}
+
+/* ── Última fila incompleta: último card expande para no dejar celda vacía ── */
+/* Grid 2-col: si el último es impar, ocupa las 2 columnas */
+.photos-cols-2 .photo-card:last-child:nth-child(odd) {
+  grid-column: span 2;
+}
+/* Grid 3-col: si el último es posición 3n-1, ocupa 2; si es 3n-2, ocupa 3 */
+.photos-cols-3 .photo-card:last-child:nth-child(3n-1) {
+  grid-column: span 2;
+}
+.photos-cols-3 .photo-card:last-child:nth-child(3n-2) {
+  grid-column: span 3;
+}
+
+/* Separador entre sección obra y planos */
+.photos-inter-section {
+  height: 8px;
+}
+
 </style>
 </head>
 <body>
 
-<div class="header no-break">
-  <div>
-    <div class="brand-name">Mili Construcciones</div>
-    <div class="brand-sub">Dirección y ejecución de obras</div>
-  </div>
-  <div>
-    <div class="report-label">Acta de reunión técnica</div>
-    <div class="report-date">{{FECHA_ACTA}}</div>
-  </div>
-</div>
+<!-- PÁGINA 1 ══════════════════════════════════════════ -->
 
-<div class="obra-info no-break">
-  <div class="obra-field"><div class="obra-field-label">Obra</div><div class="obra-field-value">{{OBRA_NOMBRE}}</div></div>
-  <div class="obra-field"><div class="obra-field-label">Tipo</div><div class="obra-field-value">{{TIPO_REUNION}}</div></div>
-  <div class="obra-field"><div class="obra-field-label">Fecha</div><div class="obra-field-value">{{FECHA_FORMATTED}}</div></div>
-</div>
-
-<div class="estado-section no-break">
-  <div class="estado-label">Objeto</div>
-  <div class="estado-text">{{OBJETO_REUNION}}</div>
-</div>
-
-<!-- 01 ASISTENTES -->
-<div class="section no-break">
-  <div class="section-header"><span class="section-number">01</span><span class="section-title">Asistentes</span></div>
-  <div class="asistentes">
-    {{ASISTENTES_HTML}}
+<!-- HEADER -->
+<div class="header">
+  <div class="header-accent"></div>
+  <div class="header-inner">
+    <div class="brand-block">
+      <div class="brand">Mili Construcciones</div>
+      <div class="sub">Gestión técnica de obra · Manacor</div>
+    </div>
+    <div class="doc-block">
+      <div class="doc-type">Acta de Visita de Obra</div>
+      <div class="doc-date">{{FECHA_DISPLAY}}</div>
+    </div>
   </div>
 </div>
 
-<!-- 02 DECISIONES -->
-<div class="section">
-  <div class="section-header"><span class="section-number">02</span><span class="section-title">Decisiones tomadas</span></div>
-  <div class="decision-list">
-    {{DECISIONES_HTML}}
+<!-- INFO BAND -->
+<div class="info-band">
+  <div class="info-cell">
+    <div class="info-label">Proyecto</div>
+    <div class="info-value">{{OBRA_NOMBRE}}</div>
+  </div>
+  <div class="info-cell">
+    <div class="info-label">Ubicación</div>
+    <div class="info-value">{{UBICACION}}</div>
+  </div>
+  <div class="info-cell">
+    <div class="info-label">Promotor</div>
+    <div class="info-value">{{PROMOTOR}}</div>
+  </div>
+  <div class="info-cell">
+    <div class="info-label">Próxima reunión</div>
+    <div class="info-value">{{PROXIMA_REUNION}}</div>
   </div>
 </div>
 
-<!-- 03 PENDIENTES -->
-<div class="section">
-  <div class="section-header"><span class="section-number">03</span><span class="section-title">Puntos pendientes</span></div>
-  <div class="pendiente-list">
-    {{PENDIENTES_HTML}}
-  </div>
+<!-- ASISTENTES -->
+<div class="asist-band">
+  <span class="asist-label">Asistentes</span>
+  {{ASISTENTES_HTML}}
 </div>
 
-<div class="footer no-break">
-  <div>
-    <div class="footer-firma">Mili —</div>
-    <div class="footer-cargo">Gerente · Mili Construcciones</div>
+<!-- BODY -->
+<div class="body">
+
+  <!-- DECISIONES -->
+  <div class="section-header">
+    <div class="section-icon icon-black">✓</div>
+    <div class="section-label">Decisiones tomadas</div>
+    <div class="section-count">{{COUNT_DECISIONES}}</div>
   </div>
-  <div class="footer-info">
-    Acta generada el {{FECHA_GENERACION}}<br>
-    Obra: {{OBRA_NOMBRE}}
+  {{DECISIONES_HTML}}
+
+  <div class="spacer"></div>
+
+  <!-- PENDIENTES -->
+  <div class="section-header">
+    <div class="section-icon icon-amber">!</div>
+    <div class="section-label">Puntos pendientes</div>
+    <div class="section-count">{{COUNT_PENDIENTES}}</div>
+  </div>
+  {{PENDIENTES_HTML}}
+
+</div>
+
+
+
+<!-- PÁGINA 2 ══════════════════════════════════════════ -->
+<div class="page-photos" style="{{SECTION_FOTOS_STYLE}}">
+
+  <!-- Mini-header página 2 -->
+  <div class="page2-header">
+    <div class="page2-header-accent"></div>
+    <div class="page2-header-inner">
+      <span class="page2-brand">Mili Construcciones</span>
+      <div class="page2-docinfo">
+        <div class="page2-docinfo-title">Reportaje fotográfico</div>
+        <div class="page2-docinfo-sub">{{OBRA_NOMBRE}} &middot; {{FECHA_DISPLAY}}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 01 · Fotografías de obra -->
+  <div style="{{SECTION_OBRA_STYLE}}">
+    <div class="photos-section-hdr">
+      <span class="photos-section-num">01</span>
+      <span class="photos-section-title">Fotografías de visita de obra</span>
+    </div>
+    <div class="photos-grid fotos-obra {{GRID_OBRA}}">
+      {{FOTOS_OBRA_HTML}}
+    </div>
+  </div>
+
+  <div class="photos-inter-section"></div>
+
+  <!-- 02 · Planos y documentación -->
+  <div style="{{SECTION_PLANOS_STYLE}}">
+    <div class="photos-section-hdr">
+      <span class="photos-section-num">02</span>
+      <span class="photos-section-title">Planos y documentación técnica adjunta</span>
+    </div>
+    <div class="photos-grid fotos-planos {{GRID_PLANOS}}">
+      {{FOTOS_PLANOS_HTML}}
+    </div>
+  </div>
+
+
+</div>
+
+<!-- FOOTER FIJO — se repite al pie de cada página automáticamente -->
+<div class="footer-fixed">
+  <div class="footer-accent"></div>
+  <div class="footer-inner">
+    <div class="footer-left">Mili Construcciones &middot; Acta generada el {{FECHA_FOOTER}}</div>
+    <div class="footer-right">{{OBRA_NOMBRE}} &middot; Manacor &middot; 2026</div>
   </div>
 </div>
 

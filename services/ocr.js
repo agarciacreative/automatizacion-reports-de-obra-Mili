@@ -132,4 +132,137 @@ function sortTrabajoPorFecha(trabajos) {
   return [...trabajos].sort((a, b) => parseFecha(a.fecha) - parseFecha(b.fecha));
 }
 
-module.exports = { extraerPartes };
+// ── ACTA OCR ──
+
+const SYSTEM_PROMPT_ACTA = `Eres un transcriptor técnico de actas de obra. Tu única tarea es leer apuntes manuscritos y volcarlos en JSON estructurado. NO redactes, NO resumas, NO interpretes — TRANSCRIBE.
+
+Devuelve ÚNICAMENTE un JSON válido, sin texto adicional, sin bloques de código markdown.
+
+EXTRACCIÓN DE CABECERA:
+- "fecha" / "fecha_display": fecha del encabezado. Formato fecha: "DD/MM/YYYY". Formato fecha_display: "DD de mes de YYYY" en español.
+- "tipo_reunion": texto exacto del apunte (ej: "Visita de Obra", "Reunión Técnica"). Si no aparece, usa "Visita de Obra".
+- "obra_nombre": nombre de la obra exactamente como aparece escrito. Cadena vacía si no consta.
+- "ubicacion": dirección completa si aparece. Cadena vacía si no.
+- "promotor": nombre del promotor si aparece. Cadena vacía si no.
+- "proxima_reunion": fecha de la próxima reunión en formato "DD de mes de YYYY". Cadena vacía si no consta.
+
+ASISTENTES — detecta todos los nombres presentes y asigna roles:
+- Milagros / Mili → Gerente
+- Domingo → Jefe de Obra
+- Bernat / Bernat Parera → Arquitecto
+- Cualquier otro nombre → usa el rol mencionado en el apunte, o "Técnico" si no se especifica.
+
+CLASIFICACIÓN DE PUNTOS (PT.1, PT.2, etc.):
+- "decision": aquello que SE DECIDE, SE APRUEBA o SE DEFINE en la reunión. Especificaciones técnicas acordadas, soluciones constructivas aprobadas, criterios fijados.
+- "pendiente": aquello que FALTA ejecutar, que alguien SE COMPROMETE A ENTREGAR, que queda PENDIENTE de confirmar o tiene una fecha límite.
+- IMPORTANTE: un mismo PT. puede generar DOS entradas con el mismo número pero distinto tipo ("decision" + "pendiente"). Úsalo cuando el punto incluye tanto una decisión como un compromiso.
+
+REGLAS ESTRICTAS PARA CADA PUNTO — LEE CON ATENCIÓN:
+1. "titulo": 4-7 palabras. Describe el tema del punto, no lo que se decide.
+2. "descripcion": UNA sola frase de contexto en tercera persona. Solo lo que NO cabe en bullets. Si todo cabe en bullets, pon cadena vacía.
+3. "bullets": AQUÍ VA EL DETALLE REAL. Reglas:
+   - Crea UN bullet por cada dato, medida, material, acción o especificación mencionada.
+   - NUNCA juntes dos informaciones en un mismo bullet.
+   - Para medidas: "Concepto: valor con unidades" → ejemplo: "Luz libre zona piscina: 7,85 m"
+   - Para materiales: "Material: especificación completa" → ejemplo: "Piedra de revestimiento: caliza gris 3 cm espesor"
+   - Para acciones: verbo en infinitivo + detalle completo → ejemplo: "Revisar encuentro muro-forjado en zona norte"
+   - Si hay una lista de ítems en el apunte, cada ítem es un bullet separado.
+   - NUNCA omitas una medida numérica, cantidad o referencia técnica. Si está escrita, va en un bullet.
+   - Prefiere 8 bullets cortos sobre 2 bullets largos.
+4. "responsable": nombre completo de quien ejecuta o entrega. Cadena vacía si no se menciona.
+5. "fecha_limite": "DD/MM/YYYY". Cadena vacía si no hay fecha explícita.
+
+PRINCIPIO FUNDAMENTAL: si dudas entre incluir un detalle o no, INCLÚYELO SIEMPRE. La información que falta no se puede recuperar; la información de sobra se puede ignorar.
+
+FORMATO JSON — devuelve exactamente esto, sin nada más:
+{
+  "fecha": "DD/MM/YYYY",
+  "fecha_display": "DD de mes de YYYY",
+  "tipo_reunion": "Visita de Obra",
+  "obra_nombre": "",
+  "ubicacion": "",
+  "promotor": "",
+  "proxima_reunion": "",
+  "asistentes": [
+    { "nombre": "Nombre Apellido", "rol": "Cargo" }
+  ],
+  "puntos": [
+    {
+      "numero": 1,
+      "tipo": "decision",
+      "titulo": "Título del punto",
+      "descripcion": "Contexto breve si aplica, o cadena vacía.",
+      "bullets": ["Dato específico 1", "Medida exacta: valor con unidades", "Acción concreta a realizar"],
+      "responsable": "",
+      "fecha_limite": ""
+    }
+  ]
+}`;
+
+async function extraerActa(rutasImagenes) {
+  if (!rutasImagenes || rutasImagenes.length === 0) {
+    return {
+      fecha: '', fecha_display: '', tipo_reunion: 'Visita de Obra',
+      obra_nombre: '', ubicacion: '', promotor: '', proxima_reunion: '',
+      asistentes: [], puntos: [],
+    };
+  }
+
+  // Construir content con todas las imágenes de apuntes
+  const imageContent = rutasImagenes.map(ruta => {
+    const base64    = fs.readFileSync(ruta).toString('base64');
+    const mediaType = getMediaType(ruta);
+    return { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } };
+  });
+
+  imageContent.push({
+    type: 'text',
+    text: 'Transcribe todos los datos de estos apuntes de visita de obra al JSON indicado. Sé exhaustivo: cada medida, material, acción y detalle debe aparecer como bullet separado. No resumas, no parafrasees, no omitas información. Devuelve solo el JSON, sin nada más.',
+  });
+
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 4096,
+    system: [{ type: 'text', text: SYSTEM_PROMPT_ACTA, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: imageContent }],
+  });
+
+  const raw = response.content?.[0]?.text;
+  if (!raw) throw new Error('La API no devolvió contenido al leer el acta');
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[OCR-ACTA raw completo]:\n', raw);
+  }
+
+  // Primer intento: parsear directamente
+  try {
+    const jsonStr = cleanJson(raw);
+    return JSON.parse(jsonStr);
+  } catch (parseErr) {
+    console.error('[OCR-ACTA] Fallo en primer parse:', parseErr.message);
+    console.error('[OCR-ACTA] Raw que falló:\n', raw);
+  }
+
+  // Segundo intento: pedirle a Claude que devuelva solo el JSON limpio
+  console.log('[OCR-ACTA] Reintentando con corrección de JSON…');
+  const retry = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 4096,
+    messages: [{
+      role: 'user',
+      content: `El siguiente texto debería ser un JSON válido pero tiene errores de formato. Devuélveme ÚNICAMENTE el JSON corregido y válido, sin ningún texto adicional, sin bloques de código markdown:\n\n${raw}`,
+    }],
+  });
+
+  const raw2 = retry.content?.[0]?.text;
+  if (!raw2) throw new Error('La API no pudo corregir el JSON del acta');
+
+  try {
+    return JSON.parse(cleanJson(raw2));
+  } catch (err2) {
+    console.error('[OCR-ACTA] Fallo también en reintento:', err2.message, '\nRaw2:', raw2);
+    throw new Error(`No se pudo interpretar la respuesta de la IA. Raw: ${raw.slice(0, 200)}`);
+  }
+}
+
+module.exports = { extraerPartes, extraerActa };

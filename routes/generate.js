@@ -3,7 +3,7 @@ const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
 const crypto  = require('crypto');
-const { extraerPartes } = require('../services/ocr');
+const { extraerPartes, extraerActa } = require('../services/ocr');
 const { generarResumen } = require('../services/summary');
 const { generarPDF }     = require('../services/pdf');
 
@@ -15,18 +15,23 @@ let lastDebug = null;
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = file.fieldname === 'partes'
-      ? path.join(__dirname, '..', 'tmp', 'partes')
-      : path.join(__dirname, '..', 'tmp', 'fotos');
+    const subdirs = { partes: 'partes', fotos: 'fotos', fotos_planos: 'planos' };
+    const dir = path.join(__dirname, '..', 'tmp', subdirs[file.fieldname] || 'fotos');
     fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
 });
 
+const ALLOWED_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.heif', '.tiff', '.bmp']);
+
 function imageFilter(req, file, cb) {
-  if (!file.mimetype.startsWith('image/')) {
-    return cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}`));
+  const ext     = path.extname(file.originalname).toLowerCase();
+  const mimeOk  = file.mimetype.startsWith('image/');
+  // application/octet-stream ocurre en móviles (iOS HEIC, etc.) — aceptar si la extensión es de imagen
+  const octetOk = file.mimetype === 'application/octet-stream' && ALLOWED_EXTS.has(ext);
+  if (!mimeOk && !octetOk) {
+    return cb(new Error(`Tipo de archivo no permitido: ${file.mimetype} (${ext || 'sin extensión'})`));
   }
   cb(null, true);
 }
@@ -34,23 +39,25 @@ function imageFilter(req, file, cb) {
 const upload = multer({
   storage,
   fileFilter: imageFilter,
-  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB máximo por imagen
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB máximo por imagen
 });
 
 // POST /api/generate — inicia el job y devuelve jobId
-router.post('/generate', upload.fields([{ name: 'partes' }, { name: 'fotos' }]), (req, res) => {
+router.post('/generate', upload.fields([{ name: 'partes' }, { name: 'fotos' }, { name: 'fotos_planos' }]), (req, res) => {
   const jobId = crypto.randomUUID();
   const { obra, fechaInicio, fechaFin, encargado, tipoDoc, estado } = req.body;
-  const partesPaths = (req.files?.partes || []).map(f => f.path);
-  const fotosPaths  = (req.files?.fotos  || []).map(f => f.path);
+  const partesPaths      = (req.files?.partes       || []).map(f => f.path);
+  const fotosPaths       = (req.files?.fotos        || []).map(f => f.path);
+  const fotosPlanosPaths = (req.files?.fotos_planos || []).map(f => f.path);
+
+  console.log(`[generate] tipo=${tipoDoc} partes=${partesPaths.length} fotos=${fotosPaths.length} planos=${fotosPlanosPaths.length}`);
 
   jobs.set(jobId, { step: 0, done: false, error: null, result: null });
   res.json({ jobId });
 
-  // TTL: limpiar job si el cliente nunca hace polling hasta completar
   const ttl = setTimeout(() => jobs.delete(jobId), JOB_TTL_MS);
 
-  processJob(jobId, { obra, fechaInicio, fechaFin, encargado, tipoDoc, estado, partesPaths, fotosPaths })
+  processJob(jobId, { obra, fechaInicio, fechaFin, encargado, tipoDoc, estado, partesPaths, fotosPaths, fotosPlanosPaths })
     .finally(() => clearTimeout(ttl));
 });
 
@@ -86,74 +93,118 @@ router.get('/progress/:jobId', (req, res) => {
 
 // ── PIPELINE ──
 async function processJob(jobId, data) {
+  const allTmp = [...data.partesPaths, ...data.fotosPaths, ...data.fotosPlanosPaths];
   try {
-    const semana = formatSemana(data.fechaInicio, data.fechaFin);
-
-    // Paso 1: OCR de partes
-    setStep(jobId, 1);
-    let trabajos = [];
-    let confianza = 'alta';
-
-    if (data.partesPaths.length > 0) {
-      const ocr = await extraerPartes(data.partesPaths);
-      trabajos = ocr.trabajos;
-      confianza = ocr.confianza;
-      lastDebug = { timestamp: new Date().toISOString(), obra: data.obra, semana, ocr };
-      if (process.env.NODE_ENV !== 'production') console.log('\n[OCR] Resultado crudo:\n', JSON.stringify(ocr, null, 2));
+    if (data.tipoDoc === 'acta') {
+      await processActa(jobId, data);
+    } else {
+      await processReport(jobId, data);
     }
-
-    // Paso 2: extracción completada
-    setStep(jobId, 2);
-    await delay(200);
-
-    // Paso 3: resumen ejecutivo
-    setStep(jobId, 3);
-    const resumen = await generarResumen(trabajos, data.obra, semana);
-
-    // Paso 4: composición con fotos
-    setStep(jobId, 4);
-    await delay(300);
-
-    // Paso 5: generar PDF con Playwright
-    setStep(jobId, 5);
-    const pdf = await generarPDF({
-      obra:      data.obra,
-      semana,
-      encargado: data.encargado,
-      estado:    data.estado || '',
-      resumen,
-      trabajos,
-      fotos:     data.fotosPaths,
-    }, data.tipoDoc || 'report');
-
-    jobs.set(jobId, {
-      step: 5,
-      done: true,
-      error: null,
-      result: {
-        obra: data.obra,
-        semana,
-        encargado: data.encargado,
-        tipoDoc: data.tipoDoc,
-        estado: data.estado || '',
-        trabajos,
-        resumen,
-        confianza,
-        numPartes: data.partesPaths.length,
-        numFotos:  data.fotosPaths.length,
-        filename:  pdf.filename,
-      },
-    });
-
-    // Limpiar temporales (partes y fotos ya embebidos en el PDF)
-    [...data.partesPaths, ...data.fotosPaths].forEach(p => { try { fs.unlinkSync(p); } catch {} });
-
   } catch (err) {
     console.error('[generate] Error en job', jobId, err.message);
     jobs.set(jobId, { step: 0, done: true, error: err.message, result: null });
-    // Limpiar temporales también en caso de error
-    [...(data.partesPaths || []), ...(data.fotosPaths || [])].forEach(p => { try { fs.unlinkSync(p); } catch {} });
+    allTmp.forEach(p => { try { fs.unlinkSync(p); } catch {} });
   }
+}
+
+async function processReport(jobId, data) {
+  const semana = formatSemana(data.fechaInicio, data.fechaFin);
+
+  // Paso 1: OCR de partes
+  setStep(jobId, 1);
+  let trabajos = [], confianza = 'alta';
+  if (data.partesPaths.length > 0) {
+    const ocr = await extraerPartes(data.partesPaths);
+    trabajos  = ocr.trabajos;
+    confianza = ocr.confianza;
+    lastDebug = { timestamp: new Date().toISOString(), obra: data.obra, semana, ocr };
+    if (process.env.NODE_ENV !== 'production') console.log('\n[OCR] Resultado crudo:\n', JSON.stringify(ocr, null, 2));
+  }
+
+  // Paso 2: extracción completada
+  setStep(jobId, 2);
+  await delay(200);
+
+  // Paso 3: resumen ejecutivo
+  setStep(jobId, 3);
+  const resumen = await generarResumen(trabajos, data.obra, semana);
+
+  // Paso 4: composición con fotos
+  setStep(jobId, 4);
+  await delay(300);
+
+  // Paso 5: PDF
+  setStep(jobId, 5);
+  const pdf = await generarPDF({
+    obra: data.obra, semana, encargado: data.encargado,
+    estado: data.estado || '', resumen, trabajos, fotos: data.fotosPaths,
+  }, 'report');
+
+  jobs.set(jobId, {
+    step: 5, done: true, error: null,
+    result: {
+      obra: data.obra, semana, encargado: data.encargado, tipoDoc: 'report',
+      estado: data.estado || '', trabajos, resumen, confianza,
+      numPartes: data.partesPaths.length, numFotos: data.fotosPaths.length,
+      filename: pdf.filename,
+    },
+  });
+
+  [...data.partesPaths, ...data.fotosPaths].forEach(p => { try { fs.unlinkSync(p); } catch {} });
+}
+
+async function processActa(jobId, data) {
+  // Paso 1: OCR de apuntes manuscritos
+  setStep(jobId, 1);
+  let actaData = await extraerActa(data.partesPaths);
+  lastDebug = { timestamp: new Date().toISOString(), tipo: 'acta', obra: data.obra, actaData };
+  if (process.env.NODE_ENV !== 'production') console.log('\n[OCR-ACTA]:\n', JSON.stringify(actaData, null, 2));
+
+  // Paso 2: completar campos desde obras.json si el acta no los incluye
+  setStep(jobId, 2);
+  if (!actaData.ubicacion || !actaData.promotor) {
+    try {
+      const obrasCfg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'obras.json'), 'utf8'));
+      const rec = (obrasCfg.obras || []).find(o => o.nombre === data.obra);
+      if (rec) {
+        if (!actaData.ubicacion && rec.direccion) actaData.ubicacion = rec.direccion;
+        if (!actaData.promotor  && rec.promotor)  actaData.promotor  = rec.promotor;
+      }
+    } catch {}
+  }
+  // Usar la obra del formulario si el acta no la menciona
+  if (!actaData.obra_nombre) actaData.obra_nombre = data.obra;
+
+  // Paso 3: sin resumen (no aplica en actas)
+  setStep(jobId, 3);
+  await delay(150);
+
+  // Paso 4: composición fotos
+  setStep(jobId, 4);
+  await delay(150);
+
+  // Paso 5: PDF
+  setStep(jobId, 5);
+  const pdf = await generarPDF({
+    obra:        data.obra,
+    actaData,
+    fotosObra:   data.fotosPaths,
+    fotosPlanos: data.fotosPlanosPaths,
+  }, 'acta');
+
+  jobs.set(jobId, {
+    step: 5, done: true, error: null,
+    result: {
+      obra: data.obra, tipoDoc: 'acta',
+      actaData,
+      numApuntes: data.partesPaths.length,
+      numFotos:   data.fotosPaths.length,
+      numPlanos:  data.fotosPlanosPaths.length,
+      filename:   pdf.filename,
+    },
+  });
+
+  [...data.partesPaths, ...data.fotosPaths, ...data.fotosPlanosPaths].forEach(p => { try { fs.unlinkSync(p); } catch {} });
 }
 
 // GET /api/debug — solo disponible en desarrollo

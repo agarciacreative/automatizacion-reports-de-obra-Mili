@@ -42,12 +42,26 @@ async function generarPDF(datos, tipoDoc = 'report') {
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
-    await page.setContent(html, { waitUntil: 'networkidle' });
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
+
+    // Esperar a que TODAS las imágenes (incluidas base64) estén pintadas
+    await page.evaluate(() => {
+      const imgs = Array.from(document.querySelectorAll('img'));
+      return Promise.all(imgs.map(img =>
+        img.complete
+          ? Promise.resolve()
+          : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; })
+      ));
+    });
+
+    // Pequeña pausa adicional para que el layout se estabilice tras las imágenes
+    await page.waitForTimeout(300);
+
     await page.pdf({
       path: outputPath,
       format: 'A4',
       printBackground: true,
-      margin: { top: '0', right: '0', bottom: '0', left: '0' },
+      margin: { top: '0', right: '0', bottom: '36px', left: '0' },
     });
   } finally {
     await page.close();
@@ -110,36 +124,116 @@ function buildReport(html, datos, fechaReport, fechaGeneracion, numSemana) {
 }
 
 function buildActa(html, datos, fechaReport, fechaGeneracion) {
-  const asistentes = [
-    { nombre: 'Mili',         rol: 'Gerente',      principal: true  },
-    { nombre: 'Domingo',      rol: 'Jefe de obra',  principal: true  },
-    { nombre: 'Bernat Parera',rol: 'Arquitecto',    principal: false },
-  ];
-  const asistentesHtml = asistentes.map(a =>
-    `<div class="asistente-badge${a.principal ? ' principal' : ''}">
-       <span class="asistente-nombre">${escHtml(a.nombre)}</span>
-       <span class="asistente-role">${escHtml(a.rol)}</span>
-     </div>`
-  ).join('');
+  const ad = datos.actaData || {};
 
-  const decisionesHtml = (datos.decisiones || [])
-    .map(d => `<div class="decision-item"><div class="decision-text">${escHtml(d)}</div></div>`)
-    .join('') || '<div class="decision-item"><div class="decision-text" style="color:#aaa">Sin decisiones registradas.</div></div>';
+  // Asistentes
+  const asistentesHtml = (ad.asistentes || []).map(a =>
+    `<span class="asist-pill">${escHtml(a.nombre)} <span class="role">· ${escHtml(a.rol)}</span></span>`
+  ).join('') || '<span class="asist-pill">Mili <span class="role">· Gerente</span></span>';
 
-  const pendientesHtml = (datos.pendientes || [])
-    .map(p => `<div class="pendiente-item"><div class="pendiente-text">${escHtml(p)}</div></div>`)
-    .join('') || '<div class="pendiente-item"><div class="pendiente-text" style="color:#aaa">Sin puntos pendientes.</div></div>';
+  // Clasificar puntos
+  const decisiones = (ad.puntos || []).filter(p => p.tipo === 'decision');
+  const pendientes = (ad.puntos || []).filter(p => p.tipo === 'pendiente');
+
+  // Decisiones HTML
+  const decisionesHtml = decisiones.map(d => {
+    const bulletsHtml = (d.bullets || []).length > 0
+      ? `<ul>${d.bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>`
+      : '';
+    return `<div class="item">
+      <div class="item-stripe stripe-black"></div>
+      <div class="item-content content-black">
+        <div class="item-meta"><span class="item-num-badge">PT. ${d.numero}</span></div>
+        <div class="item-title">${escHtml(d.titulo || '')}</div>
+        <div class="item-body">${escHtml(d.descripcion || '')}${bulletsHtml}</div>
+      </div>
+    </div>`;
+  }).join('') || `<div class="item"><div class="item-stripe stripe-black"></div>
+    <div class="item-content content-black">
+      <div class="item-body" style="color:#aaa">Sin decisiones registradas.</div>
+    </div></div>`;
+
+  // Pendientes HTML
+  const pendientesHtml = pendientes.map(p => {
+    const tagsHtml = (p.fecha_limite || p.responsable) ? `<div class="tags">
+      ${p.fecha_limite ? `<span class="tag-fecha">${escHtml(p.fecha_limite.replace(/\//g, ' / '))}</span>` : ''}
+      ${p.responsable  ? `<span class="tag-resp">${escHtml(p.responsable)}</span>` : ''}
+    </div>` : '';
+    return `<div class="item">
+      <div class="item-stripe stripe-amber"></div>
+      <div class="item-content content-amber">
+        <div class="item-meta"><span class="item-num-badge">PT. ${p.numero}</span></div>
+        <div class="item-title">${escHtml(p.titulo || '')}</div>
+        <div class="item-body">${escHtml(p.descripcion || '')}</div>
+        ${tagsHtml}
+      </div>
+    </div>`;
+  }).join('') || `<div class="item"><div class="item-stripe stripe-amber"></div>
+    <div class="item-content content-amber">
+      <div class="item-body" style="color:#aaa">Sin puntos pendientes.</div>
+    </div></div>`;
+
+  // Fotos de obra
+  const fotosObra   = (datos.fotosObra   || []).filter(p => fs.existsSync(p));
+  const fotosPlanos = (datos.fotosPlanos || []).filter(p => fs.existsSync(p));
+
+  const fechaActa = ad.fecha || fechaGeneracion;
+  const fotosObraHtml   = buildFotosHtml(fotosObra,   'obra',  fechaActa);
+  const fotosPlanoHtml  = buildFotosHtml(fotosPlanos, 'plano', fechaActa);
 
   return html
-    .replace(/{{OBRA_NOMBRE}}/g,       escHtml(datos.obra    || '—'))
-    .replace(/{{FECHA_ACTA}}/g,        fechaReport)
-    .replace(/{{TIPO_REUNION}}/g,      'Reunión técnica de seguimiento')
-    .replace(/{{FECHA_FORMATTED}}/g,   fechaReport)
-    .replace(/{{OBJETO_REUNION}}/g,    escHtml(datos.objeto || 'Reunión de seguimiento técnico de obra.'))
-    .replace(/{{ASISTENTES_HTML}}/g,   asistentesHtml)
-    .replace(/{{DECISIONES_HTML}}/g,   decisionesHtml)
-    .replace(/{{PENDIENTES_HTML}}/g,   pendientesHtml)
-    .replace(/{{FECHA_GENERACION}}/g,  fechaGeneracion);
+    .replace(/{{FECHA_DISPLAY}}/g,        ad.fecha_display || fechaReport)
+    .replace(/{{OBRA_NOMBRE}}/g,          escHtml(ad.obra_nombre || datos.obra || '—'))
+    .replace(/{{UBICACION}}/g,            escHtml(ad.ubicacion   || '—'))
+    .replace(/{{PROMOTOR}}/g,             escHtml(ad.promotor    || '—'))
+    .replace(/{{PROXIMA_REUNION}}/g,      escHtml(ad.proxima_reunion || '—'))
+    .replace(/{{FECHA_FOOTER}}/g,         ad.fecha || fechaGeneracion)
+    .replace(/{{ASISTENTES_HTML}}/g,      asistentesHtml)
+    .replace(/{{DECISIONES_HTML}}/g,      decisionesHtml)
+    .replace(/{{PENDIENTES_HTML}}/g,      pendientesHtml)
+    .replace(/{{COUNT_DECISIONES}}/g,     `${decisiones.length} punto${decisiones.length !== 1 ? 's' : ''}`)
+    .replace(/{{COUNT_PENDIENTES}}/g,     `${pendientes.length} punto${pendientes.length !== 1 ? 's' : ''}`)
+    .replace(/{{FOTOS_OBRA_HTML}}/g,      fotosObraHtml)
+    .replace(/{{FOTOS_PLANOS_HTML}}/g,    fotosPlanoHtml)
+    .replace(/{{GRID_OBRA}}/g,            getGridClass(fotosObra.length))
+    .replace(/{{GRID_PLANOS}}/g,          getGridClass(fotosPlanos.length))
+    .replace(/{{SECTION_OBRA_STYLE}}/g,   fotosObra.length   === 0 ? 'display:none;' : '')
+    .replace(/{{SECTION_PLANOS_STYLE}}/g, fotosPlanos.length === 0 ? 'display:none;' : '')
+    .replace(/{{SECTION_FOTOS_STYLE}}/g,  (fotosObra.length + fotosPlanos.length) === 0 ? 'display:none;' : '');
+}
+
+function buildFotosHtml(rutas, tipo, fecha) {
+  return rutas.map((p, i) => {
+    const ext  = path.extname(p).toLowerCase();
+    const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+    const b64  = fs.readFileSync(p).toString('base64');
+
+    // Caption: obra → fecha genérica, plano → nombre limpio del archivo
+    let caption;
+    if (tipo === 'obra') {
+      caption = `Vista obra · ${fecha || ''}`;
+    } else {
+      const basename = path.basename(p, ext);
+      // Eliminar prefijo timestamp (ej: "1716389820000-") y limpiar separadores
+      caption = basename.replace(/^\d{10,}-/, '').replace(/[-_]/g, ' ').trim() || `Plano ${i + 1}`;
+    }
+
+    // Solo las fotos de obra llevan caption; los planos no
+    const captionHtml = tipo === 'obra'
+      ? `<div class="photo-caption">${escHtml(caption.toUpperCase())}</div>`
+      : '';
+
+    return `<div class="photo-card ${tipo}">
+      <img src="data:${mime};base64,${b64}" alt="${escHtml(caption)}">
+      ${captionHtml}
+    </div>`;
+  }).join('');
+}
+
+function getGridClass(count) {
+  if (count <= 1) return 'photos-cols-1';
+  if (count === 2 || count === 4) return 'photos-cols-2'; // 2×1 y 2×2: grid perfecto
+  return 'photos-cols-3'; // 3, 5, 6, 7, 8, 9... — CSS maneja última fila incompleta
 }
 
 function escHtml(str) {

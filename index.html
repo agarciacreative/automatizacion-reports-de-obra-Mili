@@ -842,22 +842,25 @@
           </select>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Fecha inicio semana</label>
-            <input type="date" class="form-input" id="fecha-inicio">
+        <!-- Campos solo para report semanal -->
+        <div id="report-only-fields">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Fecha inicio semana</label>
+              <input type="date" class="form-input" id="fecha-inicio">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fecha fin semana</label>
+              <input type="date" class="form-input" id="fecha-fin">
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Fecha fin semana</label>
-            <input type="date" class="form-input" id="fecha-fin">
-          </div>
-        </div>
 
-        <div class="form-group">
-          <label class="form-label">Jefe de obra</label>
-          <select class="form-select" id="encargado">
-            <option value="Domingo" selected>Domingo — Jefe de obra</option>
-          </select>
+          <div class="form-group">
+            <label class="form-label">Jefe de obra</label>
+            <select class="form-select" id="encargado">
+              <option value="Domingo" selected>Domingo — Jefe de obra</option>
+            </select>
+          </div>
         </div>
 
         <div class="divider"></div>
@@ -869,25 +872,15 @@
               <input type="radio" name="tipo-doc" value="report" checked style="accent-color:var(--cream);"> Report semanal
             </label>
             <label class="tipo-doc-label unselected">
-              <input type="radio" name="tipo-doc" value="acta" style="accent-color:var(--navy);"> Acta técnica
+              <input type="radio" name="tipo-doc" value="acta" style="accent-color:var(--navy);"> Acta de visita
             </label>
           </div>
         </div>
 
-        <!-- ACTA FIELDS (visible solo en modo acta) -->
+        <!-- Nota informativa en modo acta -->
         <div id="acta-fields" style="display:none;">
-          <div class="divider"></div>
-          <div class="form-group">
-            <label class="form-label">Objeto de la reunión</label>
-            <textarea class="form-input" id="acta-objeto" rows="2" style="resize:vertical;" placeholder="Ej: Seguimiento de ejecución de estructura y revisión de plazos…"></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Decisiones tomadas <span style="color:var(--light);font-weight:300;">(una por línea)</span></label>
-            <textarea class="form-input" id="acta-decisiones" rows="3" style="resize:vertical;" placeholder="Se decide continuar con el encofrado de pilares&#10;Se aprueba el cambio de material en solera"></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Puntos pendientes <span style="color:var(--light);font-weight:300;">(uno por línea)</span></label>
-            <textarea class="form-input" id="acta-pendientes" rows="3" style="resize:vertical;" placeholder="Pendiente confirmación de medidas por arquitecto&#10;Pendiente entrega de material de cubierta"></textarea>
+          <div style="background:var(--cream2);border:1px solid var(--border);border-radius:6px;padding:0.9rem 1rem;font-size:0.78rem;color:var(--mid);line-height:1.6;">
+            La IA leerá los apuntes manuscritos y extraerá automáticamente la fecha, asistentes, decisiones y puntos pendientes.
           </div>
         </div>
 
@@ -901,35 +894,70 @@
       <!-- RIGHT: ARCHIVOS -->
       <div class="s1-right">
         <div class="screen-eyebrow">Archivos</div>
-        <h2 class="screen-title" style="font-size:1.4rem;">Sube los <em>partes y fotos</em></h2>
-        <p class="screen-sub">Los partes escritos de Domingo para extraer los trabajos. Las fotos de obra para el grid del report.</p>
+        <h2 class="screen-title" style="font-size:1.4rem;" id="right-panel-title">Sube los <em>partes y fotos</em></h2>
+        <p class="screen-sub" id="right-panel-sub">Los partes escritos de Domingo para extraer los trabajos. Las fotos de obra para el grid del report.</p>
 
-        <!-- PARTES DROP -->
-        <div class="drop-section-title">Partes de obra (fotos del parte escrito)</div>
-        <div class="drop-zone" id="drop-partes">
-          <input type="file" accept="image/*" multiple onchange="addPartes(this.files)">
-          <span class="drop-icon">📋</span>
-          <div class="drop-title">Arrastra los partes aquí</div>
-          <div class="drop-sub">Fotos de los partes escritos a mano de Domingo</div>
+        <!-- ── UPLOADS: REPORT ── -->
+        <div id="upload-report">
+          <div class="drop-section-title">Partes de obra (fotos del parte escrito)</div>
+          <div class="drop-zone" id="drop-partes">
+            <input type="file" accept="image/*" multiple onchange="addPartes(this.files)">
+            <span class="drop-icon">📋</span>
+            <div class="drop-title">Arrastra los partes aquí</div>
+            <div class="drop-sub">Fotos de los partes escritos a mano de Domingo</div>
+          </div>
+          <div class="partes-list" id="partes-list"></div>
+
+          <div class="divider"></div>
+
+          <div class="drop-section-title">Fotografías de obra</div>
+          <div class="drop-zone" id="drop-fotos">
+            <input type="file" accept="image/*" multiple onchange="addFotos(this.files)">
+            <span class="drop-icon">📷</span>
+            <div class="drop-title">Arrastra las fotos de obra</div>
+            <div class="drop-sub">Solo fotos del proceso — no los partes escritos</div>
+          </div>
+          <div class="fotos-preview" id="fotos-preview"></div>
         </div>
-        <div class="partes-list" id="partes-list"></div>
 
-        <div class="divider"></div>
+        <!-- ── UPLOADS: ACTA ── -->
+        <div id="upload-acta" style="display:none;">
+          <div class="drop-section-title">Apuntes de la reunión (manuscritos)</div>
+          <div class="drop-zone" id="drop-apuntes">
+            <input type="file" accept="image/*" multiple onchange="addPartes(this.files)">
+            <span class="drop-icon">📝</span>
+            <div class="drop-title">Arrastra los apuntes aquí</div>
+            <div class="drop-sub">La IA leerá los apuntes y extraerá toda la información</div>
+          </div>
+          <div class="partes-list" id="apuntes-list"></div>
 
-        <!-- FOTOS DROP -->
-        <div class="drop-section-title">Fotografías de obra</div>
-        <div class="drop-zone" id="drop-fotos">
-          <input type="file" accept="image/*" multiple onchange="addFotos(this.files)">
-          <span class="drop-icon">📷</span>
-          <div class="drop-title">Arrastra las fotos de obra</div>
-          <div class="drop-sub">Solo fotos del proceso — no los partes escritos</div>
+          <div class="divider"></div>
+
+          <div class="drop-section-title">Fotografías de la visita <span style="color:var(--light);font-weight:300;">(opcional)</span></div>
+          <div class="drop-zone" id="drop-fotos-obra">
+            <input type="file" accept="image/*" multiple onchange="addFotos(this.files)">
+            <span class="drop-icon">📷</span>
+            <div class="drop-title">Arrastra las fotos de la visita</div>
+            <div class="drop-sub">Fotos del estado de obra durante la reunión</div>
+          </div>
+          <div class="fotos-preview" id="fotos-obra-preview"></div>
+
+          <div class="divider"></div>
+
+          <div class="drop-section-title">Planos de referencia <span style="color:var(--light);font-weight:300;">(opcional)</span></div>
+          <div class="drop-zone" id="drop-planos">
+            <input type="file" accept="image/*" multiple onchange="addPlanos(this.files)">
+            <span class="drop-icon">📐</span>
+            <div class="drop-title">Arrastra los planos</div>
+            <div class="drop-sub">Planos técnicos o documentación de referencia</div>
+          </div>
+          <div class="fotos-preview" id="planos-preview"></div>
         </div>
-        <div class="fotos-preview" id="fotos-preview"></div>
 
         <div style="margin-top:auto;padding-top:1.5rem;">
-          <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--mid);">
-            <span id="counter-partes" style="font-weight:500;color:var(--navy);">0</span> partes ·
-            <span id="counter-fotos" style="font-weight:500;color:var(--navy);">0</span> fotos de obra
+          <div id="file-counter" style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--mid);">
+            <span id="counter-partes" style="font-weight:500;color:var(--navy);">0</span> <span id="counter-partes-label">partes</span> ·
+            <span id="counter-fotos" style="font-weight:500;color:var(--navy);">0</span> <span id="counter-fotos-label">fotos de obra</span>
           </div>
         </div>
       </div>
@@ -942,11 +970,11 @@
     <div class="s2-wrap">
       <div class="processing-icon">🤖</div>
       <div>
-        <h2 class="processing-title">Generando el <em>report…</em></h2>
+        <h2 class="processing-title" id="processing-title">Generando el <em>report…</em></h2>
       </div>
-      <p class="processing-sub">La IA está leyendo los partes, extrayendo los trabajos y redactando el resumen ejecutivo.</p>
+      <p class="processing-sub" id="processing-sub">La IA está leyendo los partes, extrayendo los trabajos y redactando el resumen ejecutivo.</p>
 
-      <div class="steps-list">
+      <div class="steps-list" id="steps-report">
         <div class="proc-step doing" id="proc-1">
           <div class="proc-step-dot"></div>
           Leyendo partes con OCR…
@@ -964,6 +992,29 @@
           Componiendo plantilla con fotos…
         </div>
         <div class="proc-step" id="proc-5">
+          <div class="proc-step-dot"></div>
+          Generando PDF final…
+        </div>
+      </div>
+
+      <div class="steps-list" id="steps-acta" style="display:none;">
+        <div class="proc-step doing" id="proc-acta-1">
+          <div class="proc-step-dot"></div>
+          Leyendo apuntes con IA…
+        </div>
+        <div class="proc-step" id="proc-acta-2">
+          <div class="proc-step-dot"></div>
+          Extrayendo asistentes, decisiones y pendientes…
+        </div>
+        <div class="proc-step" id="proc-acta-3">
+          <div class="proc-step-dot"></div>
+          Completando datos de obra…
+        </div>
+        <div class="proc-step" id="proc-acta-4">
+          <div class="proc-step-dot"></div>
+          Componiendo plantilla con fotos…
+        </div>
+        <div class="proc-step" id="proc-acta-5">
           <div class="proc-step-dot"></div>
           Generando PDF final…
         </div>
@@ -1110,59 +1161,69 @@
           </div>
         </div>
 
-        <!-- ACTA TÉCNICA -->
+        <!-- ACTA DE VISITA DE OBRA -->
         <div class="report-card" id="acta-card" style="display:none;">
-          <div class="rc-header">
-            <div>
-              <div class="rc-brand">Mili Construcciones</div>
-              <div class="rc-brand-sub">Dirección y ejecución de obras</div>
+          <!-- Header oscuro estilo nueva plantilla -->
+          <div style="background:#1a1a18;display:flex;align-items:stretch;border-radius:6px 6px 0 0;overflow:hidden;margin:-1.5rem -1.5rem 1.2rem -1.5rem;">
+            <div style="width:5px;background:#d4a853;flex-shrink:0;"></div>
+            <div style="flex:1;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-family:'DM Serif Display',serif;font-size:1.1rem;color:#f5f3ef;">Mili Construcciones</div>
+                <div style="font-size:0.6rem;color:#d4a853;text-transform:uppercase;letter-spacing:2px;margin-top:3px;">Gestión técnica de obra</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:0.7rem;color:#a09a8e;letter-spacing:1px;">Acta de Visita de Obra</div>
+                <div style="font-size:0.85rem;color:#f5f3ef;margin-top:2px;" id="acta-rc-date">—</div>
+              </div>
             </div>
-            <div>
-              <div class="rc-label">Acta técnica</div>
-              <div class="rc-date" id="acta-rc-date">—</div>
+          </div>
+
+          <!-- Info band -->
+          <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:4px;margin-bottom:1rem;overflow:hidden;">
+            <div style="flex:1;padding:0.6rem 0.9rem;border-right:1px solid var(--border);">
+              <div style="font-size:0.58rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--mid);margin-bottom:2px;">Obra</div>
+              <div style="font-size:0.82rem;font-weight:500;" id="acta-rc-obra">—</div>
+            </div>
+            <div style="flex:1;padding:0.6rem 0.9rem;border-right:1px solid var(--border);">
+              <div style="font-size:0.58rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--mid);margin-bottom:2px;">Tipo</div>
+              <div style="font-size:0.82rem;font-weight:500;" id="acta-rc-tipo">—</div>
+            </div>
+            <div style="flex:1;padding:0.6rem 0.9rem;">
+              <div style="font-size:0.58rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--mid);margin-bottom:2px;">Próxima reunión</div>
+              <div style="font-size:0.82rem;font-weight:500;" id="acta-rc-proxima">—</div>
             </div>
           </div>
 
-          <div class="rc-meta">
-            <div class="rc-meta-field"><div class="rc-meta-label">Obra</div><div class="rc-meta-val" id="acta-rc-obra">—</div></div>
-            <div class="rc-meta-field"><div class="rc-meta-label">Tipo</div><div class="rc-meta-val">Reunión técnica</div></div>
-            <div class="rc-meta-field"><div class="rc-meta-label">Fecha</div><div class="rc-meta-val" id="acta-rc-fecha">—</div></div>
-          </div>
-
-          <div class="rc-estado">
-            <div class="rc-estado-label">Objeto</div>
-            <div class="rc-estado-text" id="acta-objeto-preview">Reunión de seguimiento técnico de obra.</div>
-          </div>
-
+          <!-- Asistentes -->
           <div class="rc-section">
             <div class="rc-section-hdr">
               <span class="rc-section-num">01</span>
               <span class="rc-section-title">Asistentes</span>
             </div>
-            <div class="rc-asistente-grid" id="preview-asistentes">
-              <div class="rc-asistente principal"><span class="rc-asistente-nombre">Mili</span><span class="rc-asistente-rol">Gerente</span></div>
-              <div class="rc-asistente principal"><span class="rc-asistente-nombre">Domingo</span><span class="rc-asistente-rol">Jefe de obra</span></div>
-              <div class="rc-asistente"><span class="rc-asistente-nombre">Bernat Parera</span><span class="rc-asistente-rol">Arquitecto</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.4rem;" id="preview-asistentes">
+              <span style="font-size:0.75rem;color:var(--light);">Cargando…</span>
             </div>
           </div>
 
+          <!-- Decisiones -->
           <div class="rc-section">
             <div class="rc-section-hdr">
               <span class="rc-section-num">02</span>
               <span class="rc-section-title">Decisiones tomadas</span>
             </div>
             <div id="preview-decisiones">
-              <div class="rc-decision" style="color:var(--light);">Sin decisiones registradas.</div>
+              <div class="rc-decision" style="color:var(--light);">—</div>
             </div>
           </div>
 
+          <!-- Pendientes -->
           <div class="rc-section">
             <div class="rc-section-hdr">
               <span class="rc-section-num">03</span>
               <span class="rc-section-title">Puntos pendientes</span>
             </div>
             <div id="preview-pendientes">
-              <div class="rc-pendiente" style="color:var(--light);">Sin puntos pendientes.</div>
+              <div class="rc-pendiente" style="color:var(--light);">—</div>
             </div>
           </div>
 
@@ -1237,7 +1298,8 @@
 <script>
   let currentScreen = 1;
   let partes = [];
-  let fotos = [];
+  let fotos  = [];
+  let planos = [];
   let jobResult = null;
 
   // ── INIT ──
@@ -1342,26 +1404,24 @@
   function validateForm() {
     clearErrors();
     let valid = true;
+    const tipoDoc = document.querySelector('input[name="tipo-doc"]:checked').value;
 
     const obra = document.getElementById('obra-nombre').value;
-    if (!obra) {
-      showFieldError('obra-nombre', 'Selecciona una obra');
-      valid = false;
-    }
+    if (!obra) { showFieldError('obra-nombre', 'Selecciona una obra'); valid = false; }
 
-    const fi = document.getElementById('fecha-inicio').value;
-    const ff = document.getElementById('fecha-fin').value;
-    if (!fi || !ff) {
-      showFieldError('fecha-inicio', 'Introduce ambas fechas');
-      valid = false;
-    } else if (fi >= ff) {
-      showFieldError('fecha-inicio', 'La fecha de inicio debe ser anterior al fin de semana');
-      valid = false;
-    }
-
-    if (partes.length === 0) {
-      showDropError('drop-partes', 'Sube al menos un parte de obra');
-      valid = false;
+    if (tipoDoc === 'report') {
+      const fi = document.getElementById('fecha-inicio').value;
+      const ff = document.getElementById('fecha-fin').value;
+      if (!fi || !ff) {
+        showFieldError('fecha-inicio', 'Introduce ambas fechas');
+        valid = false;
+      } else if (fi >= ff) {
+        showFieldError('fecha-inicio', 'La fecha de inicio debe ser anterior al fin de semana');
+        valid = false;
+      }
+      if (partes.length === 0) { showDropError('drop-partes', 'Sube al menos un parte de obra'); valid = false; }
+    } else {
+      if (partes.length === 0) { showDropError('drop-apuntes', 'Sube al menos una foto de los apuntes'); valid = false; }
     }
 
     return valid;
@@ -1398,13 +1458,37 @@
 
   function onTipoDocChange() {
     const val = document.querySelector('input[name="tipo-doc"]:checked').value;
+    const isActa = val === 'acta';
+
     document.querySelectorAll('.tipo-doc-label').forEach(label => {
       const r = label.querySelector('input[type="radio"]');
-      label.classList.toggle('selected', r.value === val);
+      label.classList.toggle('selected',   r.value === val);
       label.classList.toggle('unselected', r.value !== val);
     });
-    const actaFields = document.getElementById('acta-fields');
-    if (actaFields) actaFields.style.display = val === 'acta' ? 'block' : 'none';
+
+    // Panel izquierdo
+    document.getElementById('report-only-fields').style.display = isActa ? 'none' : '';
+    document.getElementById('acta-fields').style.display         = isActa ? 'block' : 'none';
+
+    // Panel derecho
+    document.getElementById('upload-report').style.display = isActa ? 'none' : '';
+    document.getElementById('upload-acta').style.display   = isActa ? 'block' : 'none';
+
+    // Textos dinámicos
+    document.getElementById('right-panel-title').innerHTML = isActa
+      ? 'Sube los <em>apuntes y fotos</em>'
+      : 'Sube los <em>partes y fotos</em>';
+    document.getElementById('right-panel-sub').textContent = isActa
+      ? 'Los apuntes manuscritos de la visita para que la IA extraiga el acta. Las fotos y planos son opcionales.'
+      : 'Los partes escritos de Domingo para extraer los trabajos. Las fotos de obra para el grid del report.';
+
+    // Contadores
+    document.getElementById('counter-partes-label').textContent = isActa ? 'apuntes' : 'partes';
+    document.getElementById('counter-fotos-label').textContent  = isActa ? 'fotos'   : 'fotos de obra';
+
+    // Limpiar archivos al cambiar de modo
+    partes = []; fotos = []; planos = [];
+    renderPartes(); renderFotos(); renderPlanos();
   }
 
   // ── PREVIEW ──
@@ -1472,30 +1556,74 @@
         }).join('');
       }
     } else {
-      const objeto = document.getElementById('acta-objeto').value || 'Reunión de seguimiento técnico de obra.';
-      document.getElementById('acta-rc-date').textContent = todayStr;
-      document.getElementById('acta-rc-obra').textContent = obra;
-      document.getElementById('acta-rc-fecha').textContent = todayStr;
-      document.getElementById('acta-objeto-preview').textContent = objeto;
-      document.getElementById('acta-rc-footer-date').textContent = todayShort;
-      document.getElementById('acta-rc-footer-obra').textContent = obra;
+      const ad = jobResult?.actaData || {};
+      document.getElementById('acta-rc-date').textContent    = ad.fecha_display || todayStr;
+      document.getElementById('acta-rc-obra').textContent    = ad.obra_nombre   || obra;
+      document.getElementById('acta-rc-tipo').textContent    = ad.tipo_reunion  || '—';
+      document.getElementById('acta-rc-proxima').textContent = ad.proxima_reunion || '—';
+      document.getElementById('acta-rc-footer-date').textContent = ad.fecha || todayShort;
+      document.getElementById('acta-rc-footer-obra').textContent = ad.obra_nombre || obra;
 
-      const decisiones = (document.getElementById('acta-decisiones').value || '').split('\n').filter(l => l.trim());
+      // Asistentes
+      const asistDiv = document.getElementById('preview-asistentes');
+      asistDiv.innerHTML = '';
+      if ((ad.asistentes || []).length > 0) {
+        ad.asistentes.forEach(a => {
+          const pill = document.createElement('span');
+          pill.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:var(--cream2);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:0.75rem;';
+          pill.textContent = a.nombre;
+          const role = document.createElement('span');
+          role.style.cssText = 'color:var(--mid);font-size:0.68rem;';
+          role.textContent = ' · ' + a.rol;
+          pill.appendChild(role);
+          asistDiv.appendChild(pill);
+        });
+      } else {
+        asistDiv.innerHTML = '<span style="font-size:0.75rem;color:var(--light);">Se extraerán de los apuntes</span>';
+      }
+
+      // Decisiones
+      const decisiones = (ad.puntos || []).filter(p => p.tipo === 'decision');
       const previewDec = document.getElementById('preview-decisiones');
       previewDec.innerHTML = '';
       if (decisiones.length > 0) {
-        decisiones.forEach(d => { const el = document.createElement('div'); el.className = 'rc-decision'; el.textContent = d.trim(); previewDec.appendChild(el); });
+        decisiones.forEach(d => {
+          const el = document.createElement('div');
+          el.className = 'rc-decision';
+          const badge = document.createElement('span');
+          badge.style.cssText = 'font-size:0.6rem;font-weight:600;background:var(--cream3);color:var(--mid);padding:1px 5px;border-radius:8px;margin-right:6px;';
+          badge.textContent = 'PT. ' + d.numero;
+          el.appendChild(badge);
+          el.appendChild(document.createTextNode(d.titulo || d.descripcion || ''));
+          previewDec.appendChild(el);
+        });
       } else {
-        const el = document.createElement('div'); el.className = 'rc-decision'; el.style.color = 'var(--light)'; el.textContent = 'Sin decisiones registradas.'; previewDec.appendChild(el);
+        const el = document.createElement('div'); el.className = 'rc-decision'; el.style.color = 'var(--light)'; el.textContent = 'Se extraerán de los apuntes'; previewDec.appendChild(el);
       }
 
-      const pendientes = (document.getElementById('acta-pendientes').value || '').split('\n').filter(l => l.trim());
+      // Pendientes
+      const pendientes = (ad.puntos || []).filter(p => p.tipo === 'pendiente');
       const previewPend = document.getElementById('preview-pendientes');
       previewPend.innerHTML = '';
       if (pendientes.length > 0) {
-        pendientes.forEach(p => { const el = document.createElement('div'); el.className = 'rc-pendiente'; el.textContent = p.trim(); previewPend.appendChild(el); });
+        pendientes.forEach(p => {
+          const el = document.createElement('div');
+          el.className = 'rc-pendiente';
+          const badge = document.createElement('span');
+          badge.style.cssText = 'font-size:0.6rem;font-weight:600;background:var(--cream3);color:var(--mid);padding:1px 5px;border-radius:8px;margin-right:6px;';
+          badge.textContent = 'PT. ' + p.numero;
+          el.appendChild(badge);
+          el.appendChild(document.createTextNode(p.titulo || p.descripcion || ''));
+          if (p.responsable) {
+            const resp = document.createElement('span');
+            resp.style.cssText = 'margin-left:6px;font-size:0.68rem;color:var(--mid);';
+            resp.textContent = '→ ' + p.responsable;
+            el.appendChild(resp);
+          }
+          previewPend.appendChild(el);
+        });
       } else {
-        const el = document.createElement('div'); el.className = 'rc-pendiente'; el.style.color = 'var(--light)'; el.textContent = 'Sin puntos pendientes.'; previewPend.appendChild(el);
+        const el = document.createElement('div'); el.className = 'rc-pendiente'; el.style.color = 'var(--light)'; el.textContent = 'Se extraerán de los apuntes'; previewPend.appendChild(el);
       }
     }
   }
@@ -1507,24 +1635,45 @@
 
   // ── PROCESSING (conectado al backend) ──
   async function runProcessing() {
+    const tipoDoc = document.querySelector('input[name="tipo-doc"]:checked').value;
+    const isActa = tipoDoc === 'acta';
+
+    // Mostrar pasos según tipo
+    document.getElementById('steps-report').style.display = isActa ? 'none' : '';
+    document.getElementById('steps-acta').style.display   = isActa ? '' : 'none';
+    document.getElementById('processing-title').innerHTML = isActa
+      ? 'Generando el <em>acta…</em>'
+      : 'Generando el <em>report…</em>';
+    document.getElementById('processing-sub').textContent = isActa
+      ? 'La IA está leyendo los apuntes y estructurando el acta de visita de obra.'
+      : 'La IA está leyendo los partes, extrayendo los trabajos y redactando el resumen ejecutivo.';
+
     document.querySelectorAll('.proc-step').forEach(el => {
       el.classList.remove('doing', 'done-step');
       el.querySelector('.proc-step-dot').style.background = '';
     });
-    setStepUI(1);
+    setStepUI(1, isActa);
 
     try {
       const formData = new FormData();
       formData.append('obra',        document.getElementById('obra-nombre').value);
-      formData.append('fechaInicio', document.getElementById('fecha-inicio').value);
-      formData.append('fechaFin',    document.getElementById('fecha-fin').value);
-      formData.append('encargado',   document.getElementById('encargado').value);
-      formData.append('tipoDoc',     document.querySelector('input[name="tipo-doc"]:checked').value);
-      partes.forEach(f => formData.append('partes', f));
-      fotos.forEach(f  => formData.append('fotos',  f));
+      formData.append('fechaInicio', document.getElementById('fecha-inicio').value || '');
+      formData.append('fechaFin',    document.getElementById('fecha-fin').value    || '');
+      formData.append('encargado',   document.getElementById('encargado').value    || '');
+      formData.append('tipoDoc',     tipoDoc);
+      partes.forEach(f => formData.append('partes',      f));
+      fotos.forEach(f  => formData.append('fotos',       f));
+      planos.forEach(f => formData.append('fotos_planos', f));
+      console.log(`[send] partes=${partes.length} fotos=${fotos.length} planos=${planos.length}`, 'URL:', '/api/generate');
 
       const res = await fetch('/api/generate', { method: 'POST', body: formData });
-      const { jobId, error } = await res.json();
+      const rawText = await res.text();
+      console.log('[generate] status:', res.status, '| body:', rawText.slice(0, 300));
+      if (!rawText) throw new Error('El servidor devolvió una respuesta vacía (status ' + res.status + ')');
+      let parsed;
+      try { parsed = JSON.parse(rawText); }
+      catch { throw new Error('Respuesta no JSON del servidor: ' + rawText.slice(0, 150)); }
+      const { jobId, error } = parsed;
       if (error) throw new Error(error);
 
       const evtSource = new EventSource(`/api/progress/${jobId}`);
@@ -1537,7 +1686,7 @@
           goTo(1);
           return;
         }
-        if (data.step) setStepUI(data.step);
+        if (data.step) setStepUI(data.step, isActa);
         if (data.done) {
           evtSource.close();
           jobResult = data.result;
@@ -1560,10 +1709,12 @@
     }
   }
 
-  function setStepUI(currentStep) {
-    const steps = ['proc-1','proc-2','proc-3','proc-4','proc-5'];
+  function setStepUI(currentStep, isActa) {
+    const prefix = isActa ? 'proc-acta-' : 'proc-';
+    const steps = [1,2,3,4,5].map(n => prefix + n);
     steps.forEach((id, idx) => {
       const el = document.getElementById(id);
+      if (!el) return;
       el.classList.remove('doing', 'done-step');
       if (idx + 1 < currentStep)  el.classList.add('done-step');
       if (idx + 1 === currentStep) el.classList.add('doing');
@@ -1572,26 +1723,28 @@
 
   // ── FILE HANDLING ──
   function addPartes(files) {
-    Array.from(files).forEach(f => {
-      if (!partes.find(p => p.name === f.name)) partes.push(f);
-    });
+    Array.from(files).forEach(f => { if (!partes.find(p => p.name === f.name)) partes.push(f); });
     renderPartes();
   }
 
   function addFotos(files) {
-    Array.from(files).forEach(f => {
-      if (!fotos.find(p => p.name === f.name)) fotos.push(f);
-    });
+    Array.from(files).forEach(f => { if (!fotos.find(p => p.name === f.name)) fotos.push(f); });
     renderFotos();
   }
 
+  function addPlanos(files) {
+    Array.from(files).forEach(f => { if (!planos.find(p => p.name === f.name)) planos.push(f); });
+    renderPlanos();
+  }
+
   function renderPartes() {
-    const list = document.getElementById('partes-list');
+    const isActa = document.querySelector('input[name="tipo-doc"]:checked').value === 'acta';
+    const listId = isActa ? 'apuntes-list' : 'partes-list';
+    const icon   = isActa ? '📝' : '📋';
+    const list = document.getElementById(listId);
+    if (!list) return;
     list.innerHTML = partes.map((f, i) => `
-      <div class="parte-item">
-        📋 ${f.name}
-        <span class="parte-item-remove" onclick="removeParte(${i})">✕</span>
-      </div>
+      <div class="parte-item">${icon} ${f.name}<span class="parte-item-remove" onclick="removeParte(${i})">✕</span></div>
     `).join('');
     document.getElementById('counter-partes').textContent = partes.length;
   }
@@ -1599,18 +1752,29 @@
   function removeParte(i) { partes.splice(i, 1); renderPartes(); }
 
   function renderFotos() {
-    const grid = document.getElementById('fotos-preview');
+    const isActa = document.querySelector('input[name="tipo-doc"]:checked').value === 'acta';
+    const gridId = isActa ? 'fotos-obra-preview' : 'fotos-preview';
+    const grid = document.getElementById(gridId);
+    if (!grid) return;
     grid.innerHTML = fotos.map((f, i) => {
       const url = URL.createObjectURL(f);
-      return `<div class="foto-thumb">
-        <img src="${url}" alt="${f.name}">
-        <div class="foto-thumb-remove" onclick="removeFoto(${i})">✕</div>
-      </div>`;
+      return `<div class="foto-thumb"><img src="${url}" alt="${f.name}"><div class="foto-thumb-remove" onclick="removeFoto(${i})">✕</div></div>`;
     }).join('');
     document.getElementById('counter-fotos').textContent = fotos.length;
   }
 
   function removeFoto(i) { fotos.splice(i, 1); renderFotos(); }
+
+  function renderPlanos() {
+    const grid = document.getElementById('planos-preview');
+    if (!grid) return;
+    grid.innerHTML = planos.map((f, i) => {
+      const url = URL.createObjectURL(f);
+      return `<div class="foto-thumb"><img src="${url}" alt="${f.name}"><div class="foto-thumb-remove" onclick="removePlano(${i})">✕</div></div>`;
+    }).join('');
+  }
+
+  function removePlano(i) { planos.splice(i, 1); renderPlanos(); }
 
   function renderTrabajosTable(trabajos) {
     const tbody = document.getElementById('rc-trabajos-body');
@@ -1631,14 +1795,22 @@
   }
 
   // ── DRAG AND DROP ──
-  ['drop-partes', 'drop-fotos'].forEach(id => {
+  const dropZones = {
+    'drop-partes':    addPartes,
+    'drop-apuntes':   addPartes,
+    'drop-fotos':     addFotos,
+    'drop-fotos-obra':addFotos,
+    'drop-planos':    addPlanos,
+  };
+  Object.entries(dropZones).forEach(([id, handler]) => {
     const zone = document.getElementById(id);
-    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    if (!zone) return;
+    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragover'); });
     zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
     zone.addEventListener('drop', e => {
       e.preventDefault();
       zone.classList.remove('dragover');
-      (id === 'drop-partes' ? addPartes : addFotos)(e.dataTransfer.files);
+      handler(e.dataTransfer.files);
     });
   });
 
@@ -1735,10 +1907,8 @@
 
   function resetApp() {
     jobResult = null;
-    partes = [];
-    fotos = [];
-    renderPartes();
-    renderFotos();
+    partes = []; fotos = []; planos = [];
+    renderPartes(); renderFotos(); renderPlanos();
     document.getElementById('estado-input').value = '';
     document.getElementById('preview-estado').textContent = '—';
     goTo(1);
