@@ -22,8 +22,8 @@ Domingo (jefe de obra) escribe partes a mano cada día. Mili sube fotos de esos 
 | 2 Backend Express | ✅ Completada |
 | 3 OCR Claude Vision | ✅ Completada |
 | 4 PDF Playwright | ✅ Completada |
-| 5 OneDrive | ⏳ Pendiente (requiere Azure App Registration) |
-| 6 WhatsApp WATI | ⏳ Pendiente (requiere credenciales WATI) |
+| 5 Google Drive | ⏳ Pendiente (requiere Google Cloud Console + OAuth2) |
+| 6 Telegram | ⏳ Pendiente (requiere crear bot con @BotFather) |
 | 7 Automatización n8n | ⏳ Pendiente |
 
 **Deploy activo:** `https://automatizacion-reports-de-obra-mili-production.up.railway.app`
@@ -65,8 +65,8 @@ Domingo (jefe de obra) escribe partes a mano cada día. Mili sube fotos de esos 
 │   ├── ocr.js                ← Claude Vision → JSON de trabajos
 │   ├── summary.js            ← Claude texto → resumen ejecutivo
 │   ├── pdf.js                ← Playwright → PDF A4
-│   ├── onedrive.js           ← STUB vacío
-│   └── whatsapp.js           ← STUB vacío
+│   ├── googledrive.js        ← STUB vacío (Fase 5)
+│   └── telegram.js           ← STUB vacío (Fase 6)
 ├── templates/
 │   ├── template_report_semanal.html
 │   └── template_acta_tecnica.html
@@ -88,12 +88,16 @@ En Railway → panel Variables del servicio.
 ANTHROPIC_API_KEY=sk-ant-api03-...
 NODE_ENV=development
 PORT=3000
-ONEDRIVE_CLIENT_ID=        (vacío, Fase 5)
-ONEDRIVE_CLIENT_SECRET=    (vacío, Fase 5)
-ONEDRIVE_TENANT_ID=        (vacío, Fase 5)
-WATI_API_URL=https://live-mt-server.wati.io
-WATI_API_TOKEN=            (vacío, Fase 6)
-WATI_PHONE_MILI=+34...     (vacío, Fase 6)
+
+# Fase 5 — Google Drive
+GOOGLE_CLIENT_ID=             (vacío, Fase 5)
+GOOGLE_CLIENT_SECRET=         (vacío, Fase 5)
+GOOGLE_REFRESH_TOKEN=         (vacío, Fase 5)
+GOOGLE_DRIVE_FOLDER_ID=       (vacío, Fase 5)
+
+# Fase 6 — Telegram
+TELEGRAM_BOT_TOKEN=           (vacío, Fase 6)
+TELEGRAM_CHAT_ID_MILI=        (vacío, Fase 6)
 ```
 
 ---
@@ -161,19 +165,36 @@ GET /api/debug               →  solo en NODE_ENV≠production, muestra último
 
 ## Fases pendientes — detalle
 
-### Fase 5 — OneDrive
-Necesita Azure App Registration con `Files.ReadWrite.All` (Microsoft Graph).
-Implementar `services/onedrive.js` → función `uploadReport(pdfPath, obraName, semana)`.
-El botón "Guardar en OneDrive" en Pantalla 3 ya existe pero está `disabled`.
+### Fase 5 — Google Drive
+Setup en Google Cloud Console: crear proyecto → OAuth 2.0 → scope `https://www.googleapis.com/auth/drive.file` → generar refresh token una sola vez con script auxiliar.
+Dependencia: `npm install googleapis`
+Implementar `services/googledrive.js` → función `uploadReport(pdfPath, obraName, semana)`.
+El botón "Guardar en Google Drive" en Pantalla 3 ya existe pero está `disabled`.
 
-### Fase 6 — WhatsApp
-Proveedor: WATI (~40€/mes). Necesita `WATI_API_TOKEN` y `WATI_PHONE_MILI`.
-Implementar `services/whatsapp.js` → función `sendReportReady(phone, obraName, link)`.
-El botón "Enviar enlace a Mili" en Pantalla 3 ya existe pero está `disabled`.
+Variables necesarias:
+- `GOOGLE_CLIENT_ID` — del proyecto en Google Cloud Console
+- `GOOGLE_CLIENT_SECRET` — del proyecto en Google Cloud Console
+- `GOOGLE_REFRESH_TOKEN` — generado una vez con script OAuth local
+- `GOOGLE_DRIVE_FOLDER_ID` — ID de la carpeta destino en el Drive de Mili
+
+### Fase 6 — Telegram
+Gratuito. Sin intermediarios ni coste mensual. Permite enviar el PDF directamente como adjunto (no solo un enlace).
+Dependencia: ninguna extra — usar `fetch` directo a la Telegram Bot API.
+Implementar `services/telegram.js` → función `sendReportReady(pdfPath, obraName, semana)` usando `sendDocument`.
+El botón "Enviar a Mili por Telegram" en Pantalla 3 ya existe pero está `disabled`.
+
+Setup:
+1. Mili crea bot con `@BotFather` → obtiene `TELEGRAM_BOT_TOKEN`
+2. Mili inicia conversación con el bot
+3. Llamar a `https://api.telegram.org/bot<TOKEN>/getUpdates` para obtener `chat_id`
+
+Variables necesarias:
+- `TELEGRAM_BOT_TOKEN` — proporcionado por @BotFather
+- `TELEGRAM_CHAT_ID_MILI` — obtenido tras el primer mensaje de Mili al bot
 
 ### Fase 7 — n8n automático
 Endpoint `GET /api/generate-auto` que acepta URLs de imágenes en lugar de file uploads.
-Workflow n8n: webhook WhatsApp → clasificar prefijo → acumular semana → llamar API → PDF → notificar.
+Workflow n8n: webhook Telegram → clasificar prefijo → acumular semana → llamar API → PDF → notificar por Telegram.
 
 ---
 
