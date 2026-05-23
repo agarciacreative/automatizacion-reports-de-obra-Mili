@@ -14,8 +14,8 @@ Aplicación web que automatiza la generación de documentos PDF profesionales a 
 | Frontend — pulido y validación | 🔄 En curso |
 | Backend — OCR con Claude API | ⏳ Pendiente |
 | Backend — generación PDF | ⏳ Pendiente |
-| Integración OneDrive | ⏳ Pendiente |
-| Integración WhatsApp | ⏳ Pendiente |
+| Integración Google Drive | ⏳ Pendiente |
+| Integración Telegram | ⏳ Pendiente |
 
 ---
 
@@ -90,8 +90,8 @@ mili-reports/
 | Frontend | HTML + CSS + JS vanilla |
 | IA / OCR | Claude API (claude-sonnet-4) con Vision |
 | PDF | Playwright + Chromium |
-| Almacenamiento | OneDrive |
-| Notificaciones | WhatsApp Business (WATI) |
+| Almacenamiento | Google Drive |
+| Notificaciones | Telegram Bot API |
 | Orquestación | n8n |
 
 ---

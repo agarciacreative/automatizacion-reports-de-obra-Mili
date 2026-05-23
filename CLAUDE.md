@@ -16,7 +16,7 @@ El proyecto está en **fase de frontend**. Existe un prototipo funcional en `mil
 
 - **Pantalla 1:** formulario de datos de obra + drag & drop de partes y fotos
 - **Pantalla 2:** simulación del procesado con pasos animados
-- **Pantalla 3:** preview del report + panel de acciones (descargar, OneDrive, WhatsApp)
+- **Pantalla 3:** preview del report + panel de acciones (descargar, Google Drive, Telegram)
 - **Modal:** creación de obra nueva
 
 El backend **no está implementado aún**. La fase actual es pulir el frontend antes de conectar la API.
@@ -146,23 +146,34 @@ No hay servidor dedicado. El backend es un **agente Claude orquestado por n8n** 
 |------------|------------|----------------|
 | Orquestador | n8n self-hosted | ~5 €/mes (Hetzner CX22) |
 | IA / agente | Claude API (claude-sonnet-4) | ~10–20 €/mes |
-| Canal entrada | WhatsApp Business (WATI) | ~40 €/mes |
-| Almacenamiento | OneDrive | incluido en M365 |
-| **Total infraestructura** | | **~55–65 €/mes** |
+| Canal entrada | Telegram Bot API | gratuito |
+| Almacenamiento | Google Drive | incluido en Google Workspace |
+| **Total infraestructura** | | **~15–25 €/mes** |
 
 ### Flujo automático semanal
 
 ```
-Domingo → WhatsApp (prefijo "parte" o "obra")
+Mili inicia conversación con el bot de Telegram
         ↓
-    n8n webhook recibe el mensaje
+    Bot muestra obras activas (inline keyboard desde obras.json)
+        ↓
+    Mili selecciona obra
+        ↓
+    Bot pide fotos de obra → timeout 2-3s sin nueva foto →
+    muestra [ ✅ Ya están todas ] [ 📸 Envío más ]
+        ↓
+    Mili confirma fotos de obra
+        ↓
+    Bot pide fotos de partes → mismo sistema de botón
+        ↓
+    Mili confirma partes
         ↓
     Agente Claude API
     ├── 1. OCR del parte con Vision → JSON estructurado
     ├── 2. Genera resumen ejecutivo y tabla de trabajos
     ├── 3. Inyecta datos en template HTML
     ├── 4. Playwright genera PDF
-    └── 5. Sube a OneDrive + avisa a Mili por WhatsApp
+    └── 5. Sube a Google Drive (carpeta de la obra) + envía PDF a Mili por Telegram
 ```
 
 ### Flujo manual (desde el frontend web)
@@ -181,7 +192,7 @@ Mili sube partes y fotos en el navegador
 
 - **Reports semanales** — OCR de partes + generación de PDF
 - **Actas de reunión técnica** — procesado de apuntes + PDF
-- **Facturación** — Mili dice por WhatsApp "factura semana 20 a UNDERHIP" → agente genera y envía factura
+- **Facturación** — Mili dice por Telegram "factura semana 20 a UNDERHIP" → agente genera y envía factura
 - **Seguimiento de cobros** — revisión automática de facturas pendientes con aviso a Mili
 - **Resumen de costes** — consolidación de horas y operarios por semana
 
@@ -213,6 +224,46 @@ ejecutivo profesional de 4-5 líneas para enviar al promotor.
 Tono: formal, conciso, orientado al avance de obra.
 ```
 
+### Flujo conversacional del bot de Telegram
+
+El bot gestiona la sesión completa con Mili sin necesidad de frontend web:
+
+```
+Estado 0 — INICIO
+  Mili: cualquier mensaje al bot
+  Bot:  "¿Para qué obra?" + inline keyboard con obras activas (desde obras.json)
+
+Estado 1 — OBRA SELECCIONADA
+  Mili: pulsa inline keyboard → obra elegida
+  Bot:  "Envía las fotos de obra (las que quieras)"
+
+Estado 2 — RECIBIENDO FOTOS DE OBRA
+  Mili: envía fotos (una o varias, en el orden que quiera)
+  Bot:  acumula silenciosamente; tras 2-3s sin nueva foto muestra:
+        [ ✅ Ya están todas ] [ 📸 Envío más ]
+
+Estado 3 — FOTOS DE OBRA CONFIRMADAS
+  Mili: pulsa [ ✅ Ya están todas ]
+  Bot:  "Ahora envía las fotos de los partes escritos"
+
+Estado 4 — RECIBIENDO FOTOS DE PARTES
+  Mili: envía fotos de partes
+  Bot:  mismo sistema de timeout + botón
+
+Estado 5 — PARTES CONFIRMADOS
+  Mili: pulsa [ ✅ Ya están todas ]
+  Bot:  "Generando el report..." + lanza pipeline OCR → resumen → PDF
+
+Estado 6 — PIPELINE COMPLETADO
+  Bot:  envía el PDF como documento adjunto por Telegram
+        sube automáticamente a la carpeta de la obra en Google Drive
+        confirma: "Report subido a Google Drive ✓"
+```
+
+**Gestión de timeout:** cada foto recibida reinicia un timer de 2-3 s. Al expirar, el bot edita su último mensaje mostrando los botones. Si Mili pulsa "Envío más", el timer se resetea y sigue acumulando.
+
+**Cancelar en cualquier momento:** el comando `/cancelar` reinicia el estado a 0.
+
 ### Niveles de confianza OCR
 
 | Nivel | Acción |
@@ -225,11 +276,13 @@ Tono: formal, conciso, orientado al avance de obra.
 
 ## Tareas pendientes de backend
 
-- [ ] Flujo n8n: webhook WhatsApp → clasificación por prefijo
+- [ ] Bot Telegram: flujo conversacional (obra → fotos → partes → pipeline)
+- [ ] Bot Telegram: inline keyboard con obras activas desde obras.json
+- [ ] Bot Telegram: acumulación de fotos con timeout + botón de confirmación
 - [ ] Flujo n8n: llamada Claude API Vision para OCR
 - [ ] Flujo n8n: llamada Claude API para resumen ejecutivo
 - [ ] Flujo n8n: Playwright para generación de PDF
-- [ ] Flujo n8n: subida a OneDrive + notificación WhatsApp
+- [ ] Flujo n8n: subida a Google Drive (carpeta por obra) + envío PDF por Telegram
 - [ ] Endpoint mínimo para conectar el frontend al agente
 - [ ] Flujo de facturación automática
 - [ ] Flujo de seguimiento de cobros
