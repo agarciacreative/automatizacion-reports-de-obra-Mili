@@ -5,6 +5,14 @@ const path = require('path');
 // Singleton: reutilizar el browser entre requests para ahorrar memoria y tiempo
 let browserInstance = null;
 async function getBrowser() {
+  if (browserInstance) {
+    try {
+      // Verificar que el proceso sigue vivo antes de reutilizarlo
+      await browserInstance.version();
+    } catch {
+      browserInstance = null;
+    }
+  }
   if (!browserInstance) browserInstance = await chromium.launch();
   return browserInstance;
 }

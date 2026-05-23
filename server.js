@@ -2,8 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 
-const obrasRouter   = require('./routes/obras');
+const obrasRouter    = require('./routes/obras');
 const generateRouter = require('./routes/generate');
+const { start: startBot } = require('./services/telegram');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -35,4 +36,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Mili Reports corriendo en http://localhost:${PORT}`);
+  startBot();
 });

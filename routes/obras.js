@@ -7,15 +7,22 @@ const OBRAS_FILE = path.join(__dirname, '..', 'obras.json');
 
 function readObras() {
   try {
-    return JSON.parse(fs.readFileSync(OBRAS_FILE, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(OBRAS_FILE, 'utf8'));
+    return Array.isArray(data) ? data : (data.obras || []);
   } catch {
     return [];
   }
 }
 
+function writeObras(list) {
+  const tmp = OBRAS_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify({ obras: list }, null, 2));
+  fs.renameSync(tmp, OBRAS_FILE);
+}
+
 router.get('/', (req, res) => {
   try {
-    res.json(readObras());
+    res.json({ obras: readObras() });
   } catch (err) {
     res.status(500).json({ error: 'Error leyendo obras' });
   }
@@ -35,11 +42,10 @@ router.post('/', (req, res) => {
       creada: new Date().toISOString().split('T')[0],
     };
     obras.push(nueva);
-    const tmp = OBRAS_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(obras, null, 2));
-    fs.renameSync(tmp, OBRAS_FILE);
+    writeObras(obras);
     res.json(nueva);
   } catch (err) {
+    console.error('[obras] Error guardando obra:', err.message);
     res.status(500).json({ error: 'Error guardando obra' });
   }
 });
