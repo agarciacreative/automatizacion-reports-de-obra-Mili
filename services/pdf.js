@@ -163,6 +163,9 @@ function buildActa(html, datos, fechaReport, fechaGeneracion) {
 
   // Pendientes HTML
   const pendientesHtml = pendientes.map(p => {
+    const bulletsHtml = (p.bullets || []).length > 0
+      ? `<ul>${p.bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>`
+      : '';
     const tagsHtml = (p.fecha_limite || p.responsable) ? `<div class="tags">
       ${p.fecha_limite ? `<span class="tag-fecha">${escHtml(p.fecha_limite.replace(/\//g, ' / '))}</span>` : ''}
       ${p.responsable  ? `<span class="tag-resp">${escHtml(p.responsable)}</span>` : ''}
@@ -172,7 +175,7 @@ function buildActa(html, datos, fechaReport, fechaGeneracion) {
       <div class="item-content content-amber">
         <div class="item-meta"><span class="item-num-badge">PT. ${p.numero}</span></div>
         <div class="item-title">${escHtml(p.titulo || '')}</div>
-        <div class="item-body">${escHtml(p.descripcion || '')}</div>
+        <div class="item-body">${escHtml(p.descripcion || '')}${bulletsHtml}</div>
         ${tagsHtml}
       </div>
     </div>`;

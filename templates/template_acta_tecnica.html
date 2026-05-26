@@ -181,7 +181,7 @@ body {
 .spacer { height: 20px; }
 
 /* ── ITEMS ── */
-.item { display: flex; margin-bottom: 8px; }
+.item { display: flex; margin-bottom: 8px; break-inside: avoid; page-break-inside: avoid; }
 .item-stripe { width: 3px; border-radius: 2px 0 0 2px; flex-shrink: 0; }
 .stripe-black { background: #1a1a18; }
 .stripe-amber { background: #d4a853; }
@@ -511,7 +511,7 @@ body {
   <div class="photos-inter-section"></div>
 
   <!-- 02 · Planos y documentación -->
-  <div style="{{SECTION_PLANOS_STYLE}}">
+  <div style="{{SECTION_PLANOS_STYLE}}break-inside:avoid;page-break-inside:avoid;">
     <div class="photos-section-hdr">
       <span class="photos-section-num">02</span>
       <span class="photos-section-title">Planos y documentación técnica adjunta</span>

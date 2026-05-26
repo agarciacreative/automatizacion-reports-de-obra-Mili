@@ -159,7 +159,7 @@ CLASIFICACIÓN DE PUNTOS (PT.1, PT.2, etc.):
 
 REGLAS ESTRICTAS PARA CADA PUNTO — LEE CON ATENCIÓN:
 1. "titulo": 4-7 palabras. Describe el tema del punto, no lo que se decide.
-2. "descripcion": UNA sola frase de contexto en tercera persona. Solo lo que NO cabe en bullets. Si todo cabe en bullets, pon cadena vacía.
+2. "descripcion": En la mayoría de los puntos debe ser cadena vacía "". Úsala SOLO para contexto que no es ni una medida, ni un material, ni una acción, ni una especificación técnica — es decir, solo para información de fondo que no encaja en ningún bullet. NUNCA repitas en descripcion información que ya aparece en los bullets. Si tienes dudas, deja la descripcion vacía.
 3. "bullets": AQUÍ VA EL DETALLE REAL. Reglas:
    - Crea UN bullet por cada dato, medida, material, acción o especificación mencionada.
    - NUNCA juntes dos informaciones en un mismo bullet.
