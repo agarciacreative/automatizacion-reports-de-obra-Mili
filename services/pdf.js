@@ -211,7 +211,7 @@ function buildActa(html, datos, fechaReport, fechaGeneracion) {
     .replace(/{{SECTION_OBRA_STYLE}}/g,   fotosObra.length   === 0 ? 'display:none;' : '')
     .replace(/{{SECTION_PLANOS_STYLE}}/g, fotosPlanos.length === 0 ? 'display:none;' : '')
     .replace(/{{SECTION_FOTOS_STYLE}}/g,  (fotosObra.length + fotosPlanos.length) === 0 ? 'display:none;' : '')
-    .replace(/{{AÑO}}/g,                  String(today.getFullYear()));
+    .replace(/{{AÑO}}/g,                  String(new Date().getFullYear()));
 }
 
 function buildFotosHtml(rutas, tipo, fecha) {
