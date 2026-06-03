@@ -4,17 +4,28 @@ const path = require('path');
 
 const client = new Anthropic();
 
-const SYSTEM_PROMPT = `Eres un asistente especializado en leer partes de obra escritos a mano en español.
+const SYSTEM_PROMPT = `Eres un asistente especializado en extraer datos de partes de obra en español. Las imágenes pueden ser de dos tipos:
 
-Tu tarea es extraer los datos de la imagen y devolver ÚNICAMENTE un JSON válido, sin texto adicional, sin explicaciones, sin bloques de código markdown.
+TIPO A — PARTE ESCRITO A MANO: hoja física con texto manuscrito, tablas o cuadrículas.
+TIPO B — CAPTURA DE MENSAJE DE TEXTO: pantalla de WhatsApp, Telegram, SMS u otra app de mensajería.
 
-REGLAS ESTRICTAS:
-- NUNCA inventes datos. Si algo no se lee, usa cadena vacía "" o 0.
-- El campo "fecha" debe ser EXACTAMENTE el día y mes que aparece escrito, en formato "DD MMM" (ejemplo: "12 may", "3 jun"). Si no hay fecha clara, usa "".
-- Si el parte contiene varios días, crea UNA entrada por día.
-- El campo "descripcion" es el texto literal de los trabajos de ese día. Cópialo tal cual, sin resumir ni añadir.
+Devuelve ÚNICAMENTE un JSON válido, sin texto adicional, sin explicaciones, sin bloques de código markdown.
+
+REGLAS COMUNES (aplican a ambos tipos):
+- NUNCA inventes datos. Si algo no se lee o no se menciona, usa "" o 0.
+- Si el documento contiene varios días, crea UNA entrada por día en el array "trabajos".
 - "confianza": "alta" si lees bien el texto, "media" si hay dudas en alguna parte, "baja" si apenas se entiende.
-- Los operarios son las personas mencionadas. El primero siempre es el encargado.
+
+REGLAS TIPO A (parte manuscrito):
+- "fecha": exactamente el día y mes escritos, formato "DD MMM" (ej: "12 may", "3 jun"). "" si no hay fecha.
+- "descripcion": texto literal de los trabajos de ese día. Cópialo tal cual, sin resumir ni añadir.
+- "operarios": personas mencionadas en el parte. El primero siempre es el encargado.
+
+REGLAS TIPO B (captura de mensaje de texto):
+- "fecha": extráela del timestamp visible en la captura o del texto del mensaje, en formato "DD MMM". "" si no se ve.
+- "descripcion": transcribe el texto del mensaje que describe los trabajos, tal cual aunque sea informal.
+- "operarios": si el remitente es identificable (nombre en el chat, firma en el mensaje), úsalo como primer operario con rol "encargado". Si el mensaje menciona a otras personas por nombre, inclúyelas. Si dice "yo" o "nosotros" sin más contexto, deja el array vacío.
+- La confianza será como mínimo "media" para capturas de mensajes.
 
 FORMATO JSON (devuelve exactamente esto, sin nada más):
 {
@@ -82,7 +93,7 @@ async function extraerPartes(rutasImagenes) {
             },
             {
               type: 'text',
-              text: 'Extrae los datos de este parte de obra. Devuelve solo el JSON, sin nada más.',
+              text: 'Extrae los datos de este documento (parte manuscrito o captura de mensaje). Devuelve solo el JSON, sin nada más.',
             },
           ],
         },
@@ -134,13 +145,12 @@ function sortTrabajoPorFecha(trabajos) {
 
 // ── ACTA OCR ──
 
-const SYSTEM_PROMPT_ACTA = `Eres un transcriptor técnico de actas de obra. Tu única tarea es leer apuntes manuscritos y volcarlos en JSON estructurado. NO redactes, NO resumas, NO interpretes — TRANSCRIBE.
+const SYSTEM_PROMPT_ACTA = `Eres un transcriptor técnico de actas de obra. Tu única tarea es leer apuntes (manuscritos o capturas de mensajes de texto) y volcarlos en JSON estructurado. NO redactes, NO resumas, NO interpretes — TRANSCRIBE.
 
 Devuelve ÚNICAMENTE un JSON válido, sin texto adicional, sin bloques de código markdown.
 
 EXTRACCIÓN DE CABECERA:
 - "fecha" / "fecha_display": fecha del encabezado. Formato fecha: "DD/MM/YYYY". Formato fecha_display: "DD de mes de YYYY" en español.
-- "tipo_reunion": texto exacto del apunte (ej: "Visita de Obra", "Reunión Técnica"). Si no aparece, usa "Visita de Obra".
 - "obra_nombre": nombre de la obra exactamente como aparece escrito. Cadena vacía si no consta.
 - "ubicacion": dirección completa si aparece. Cadena vacía si no.
 - "promotor": nombre del promotor si aparece. Cadena vacía si no.
@@ -178,7 +188,6 @@ FORMATO JSON — devuelve exactamente esto, sin nada más:
 {
   "fecha": "DD/MM/YYYY",
   "fecha_display": "DD de mes de YYYY",
-  "tipo_reunion": "Visita de Obra",
   "obra_nombre": "",
   "ubicacion": "",
   "promotor": "",
@@ -202,7 +211,7 @@ FORMATO JSON — devuelve exactamente esto, sin nada más:
 async function extraerActa(rutasImagenes) {
   if (!rutasImagenes || rutasImagenes.length === 0) {
     return {
-      fecha: '', fecha_display: '', tipo_reunion: 'Visita de Obra',
+      fecha: '', fecha_display: '',
       obra_nombre: '', ubicacion: '', promotor: '', proxima_reunion: '',
       asistentes: [], puntos: [],
     };
@@ -222,7 +231,7 @@ async function extraerActa(rutasImagenes) {
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: [{ type: 'text', text: SYSTEM_PROMPT_ACTA, cache_control: { type: 'ephemeral' } }],
     messages: [{ role: 'user', content: imageContent }],
   });

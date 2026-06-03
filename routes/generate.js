@@ -175,16 +175,12 @@ async function processActa(jobId, data) {
   // Usar la obra del formulario si el acta no la menciona
   if (!actaData.obra_nombre) actaData.obra_nombre = data.obra;
 
-  // Paso 3: sin resumen (no aplica en actas)
+  // Pasos 3-4: composición (fusionados)
   setStep(jobId, 3);
-  await delay(150);
+  await delay(300);
 
-  // Paso 4: composición fotos
+  // Paso 4: PDF
   setStep(jobId, 4);
-  await delay(150);
-
-  // Paso 5: PDF
-  setStep(jobId, 5);
   const pdf = await generarPDF({
     obra:        data.obra,
     actaData,
@@ -193,7 +189,7 @@ async function processActa(jobId, data) {
   }, 'acta');
 
   jobs.set(jobId, {
-    step: 5, done: true, error: null,
+    step: 4, done: true, error: null,
     result: {
       obra: data.obra, tipoDoc: 'acta',
       actaData,

@@ -48,3 +48,4 @@ npm-debug.log*
 dist/
 build/
 .cache/
+.claude/settings.local.json
