@@ -24,13 +24,16 @@ const storage = multer.diskStorage({
 });
 
 const ALLOWED_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.heif', '.tiff', '.bmp']);
+const ALLOWED_PLANOS_EXTS = new Set([...ALLOWED_EXTS, '.pdf']);
 
 function imageFilter(req, file, cb) {
   const ext     = path.extname(file.originalname).toLowerCase();
   const mimeOk  = file.mimetype.startsWith('image/');
-  // application/octet-stream ocurre en móviles (iOS HEIC, etc.) — aceptar si la extensión es de imagen
-  const octetOk = file.mimetype === 'application/octet-stream' && ALLOWED_EXTS.has(ext);
-  if (!mimeOk && !octetOk) {
+  const pdfOk   = file.fieldname === 'fotos_planos' && file.mimetype === 'application/pdf' && ext === '.pdf';
+  // application/octet-stream ocurre en móviles (iOS HEIC, etc.) — aceptar si la extensión es válida
+  const allowed  = file.fieldname === 'fotos_planos' ? ALLOWED_PLANOS_EXTS : ALLOWED_EXTS;
+  const octetOk  = file.mimetype === 'application/octet-stream' && allowed.has(ext);
+  if (!mimeOk && !pdfOk && !octetOk) {
     return cb(new Error(`Tipo de archivo no permitido: ${file.mimetype} (${ext || 'sin extensión'})`));
   }
   cb(null, true);

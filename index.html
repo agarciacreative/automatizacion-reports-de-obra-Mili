@@ -946,10 +946,10 @@
 
           <div class="drop-section-title">Planos de referencia <span style="color:var(--light);font-weight:300;">(opcional)</span></div>
           <div class="drop-zone" id="drop-planos">
-            <input type="file" accept="image/*" multiple onchange="addPlanos(this.files)">
+            <input type="file" accept="image/*,application/pdf" multiple onchange="addPlanos(this.files)">
             <span class="drop-icon">📐</span>
             <div class="drop-title">Arrastra los planos</div>
-            <div class="drop-sub">Planos técnicos o documentación de referencia</div>
+            <div class="drop-sub">Imágenes o PDFs de planos técnicos</div>
           </div>
           <div class="fotos-preview" id="planos-preview"></div>
         </div>
@@ -1765,6 +1765,13 @@
     const grid = document.getElementById('planos-preview');
     if (!grid) return;
     grid.innerHTML = planos.map((f, i) => {
+      if (f.type === 'application/pdf') {
+        return `<div class="foto-thumb" style="background:var(--cream2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:0.65rem;color:var(--mid);padding:6px;text-align:center;">
+          <span style="font-size:1.4rem;">📄</span>
+          <span style="word-break:break-all;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span>
+          <div class="foto-thumb-remove" onclick="removePlano(${i})">✕</div>
+        </div>`;
+      }
       const url = URL.createObjectURL(f);
       return `<div class="foto-thumb"><img src="${url}" alt="${f.name}"><div class="foto-thumb-remove" onclick="removePlano(${i})">✕</div></div>`;
     }).join('');

@@ -267,53 +267,8 @@ body {
 }
 
 /* ════════════════════════════════════════════════════════
-   PÁGINA 2 — REPORTAJE FOTOGRÁFICO
+   SECCIÓN FOTOGRÁFICA — fluye dentro del documento
    ════════════════════════════════════════════════════════ */
-
-.page-photos {
-  page-break-before: always;
-  background: #f5f3ef;
-}
-
-/* Mini-header idéntico al principal pero compacto */
-.page2-header {
-  background: #1a1a18;
-  display: flex;
-  height: 52px;
-}
-.page2-header-accent {
-  width: 6px;
-  background: #d4a853;
-  flex-shrink: 0;
-}
-.page2-header-inner {
-  flex: 1;
-  padding: 0 32px 0 32px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.page2-brand {
-  font-family: 'DM Serif Display', serif;
-  font-size: 16px;
-  color: #f5f3ef;
-  letter-spacing: 0.3px;
-}
-.page2-docinfo {
-  text-align: right;
-}
-.page2-docinfo-title {
-  font-size: 9px;
-  color: #8a8478;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-.page2-docinfo-sub {
-  font-size: 7.5px;
-  color: #4a4a48;
-  margin-top: 3px;
-  letter-spacing: 1px;
-}
 
 /* Encabezado de sección fotos */
 .photos-section-hdr {
@@ -478,49 +433,34 @@ body {
   </div>
   {{PENDIENTES_HTML}}
 
-</div>
+  <!-- SECCIÓN FOTOGRÁFICA — fluye aquí si hay espacio, salta de página solo si es necesario -->
+  <div style="{{SECTION_FOTOS_STYLE}}">
+    <div class="spacer"></div>
 
+    <!-- 01 · Fotografías de obra -->
+    <div style="{{SECTION_OBRA_STYLE}}">
+      <div class="photos-section-hdr">
+        <span class="photos-section-num">01</span>
+        <span class="photos-section-title">Fotografías de visita de obra</span>
+      </div>
+      <div class="photos-grid fotos-obra {{GRID_OBRA}}">
+        {{FOTOS_OBRA_HTML}}
+      </div>
+    </div>
 
+    <div class="photos-inter-section"></div>
 
-<!-- PÁGINA 2 ══════════════════════════════════════════ -->
-<div class="page-photos" style="{{SECTION_FOTOS_STYLE}}">
-
-  <!-- Mini-header página 2 -->
-  <div class="page2-header">
-    <div class="page2-header-accent"></div>
-    <div class="page2-header-inner">
-      <span class="page2-brand">Mili Construcciones</span>
-      <div class="page2-docinfo">
-        <div class="page2-docinfo-title">Reportaje fotográfico</div>
-        <div class="page2-docinfo-sub">{{OBRA_NOMBRE}} &middot; {{FECHA_DISPLAY}}</div>
+    <!-- 02 · Planos y documentación -->
+    <div style="{{SECTION_PLANOS_STYLE}}">
+      <div class="photos-section-hdr">
+        <span class="photos-section-num">02</span>
+        <span class="photos-section-title">Planos y documentación técnica adjunta</span>
+      </div>
+      <div class="photos-grid fotos-planos {{GRID_PLANOS}}">
+        {{FOTOS_PLANOS_HTML}}
       </div>
     </div>
   </div>
-
-  <!-- 01 · Fotografías de obra -->
-  <div style="{{SECTION_OBRA_STYLE}}">
-    <div class="photos-section-hdr">
-      <span class="photos-section-num">01</span>
-      <span class="photos-section-title">Fotografías de visita de obra</span>
-    </div>
-    <div class="photos-grid fotos-obra {{GRID_OBRA}}">
-      {{FOTOS_OBRA_HTML}}
-    </div>
-  </div>
-
-  <div class="photos-inter-section"></div>
-
-  <!-- 02 · Planos y documentación -->
-  <div style="{{SECTION_PLANOS_STYLE}}break-inside:avoid;page-break-inside:avoid;">
-    <div class="photos-section-hdr">
-      <span class="photos-section-num">02</span>
-      <span class="photos-section-title">Planos y documentación técnica adjunta</span>
-    </div>
-    <div class="photos-grid fotos-planos {{GRID_PLANOS}}">
-      {{FOTOS_PLANOS_HTML}}
-    </div>
-  </div>
-
 
 </div>
 

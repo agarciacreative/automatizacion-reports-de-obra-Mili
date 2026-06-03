@@ -31,10 +31,27 @@ async function generarPDF(datos, tipoDoc = 'report') {
   const fechaGeneracion = today.toLocaleDateString('es-ES');
   const numSemana = getWeekNumber(today);
 
+  // Convertir PDFs adjuntos como planos a imágenes PNG antes de incrustar
+  let datosConvertidos = datos;
+  const tmpConvertidos = [];
+  if (tipoDoc === 'acta' && (datos.fotosPlanos || []).some(p => path.extname(p).toLowerCase() === '.pdf')) {
+    const browser = await getBrowser();
+    const planosFinal = [];
+    for (const p of datos.fotosPlanos) {
+      if (path.extname(p).toLowerCase() === '.pdf') {
+        const imgs = await pdfToImages(p, browser);
+        imgs.forEach(imgPath => { planosFinal.push(imgPath); tmpConvertidos.push(imgPath); });
+      } else {
+        planosFinal.push(p);
+      }
+    }
+    datosConvertidos = { ...datos, fotosPlanos: planosFinal };
+  }
+
   if (tipoDoc === 'report') {
-    html = buildReport(html, datos, fechaReport, fechaGeneracion, numSemana);
+    html = buildReport(html, datosConvertidos, fechaReport, fechaGeneracion, numSemana);
   } else {
-    html = buildActa(html, datos, fechaReport, fechaGeneracion);
+    html = buildActa(html, datosConvertidos, fechaReport, fechaGeneracion);
   }
 
   const outputDir = path.join(__dirname, '..', 'output');
@@ -73,9 +90,40 @@ async function generarPDF(datos, tipoDoc = 'report') {
     });
   } finally {
     await page.close();
+    // Limpiar PNGs temporales generados desde PDFs
+    tmpConvertidos.forEach(p => { try { fs.unlinkSync(p); } catch {} });
   }
 
   return { filename, path: outputPath };
+}
+
+// Renderiza cada página de un PDF como PNG usando Playwright (sin deps externas)
+async function pdfToImages(pdfPath, browser) {
+  const results = [];
+  const page = await browser.newPage();
+  try {
+    // Viewport A4 a 120 dpi: 794×1123 px
+    await page.setViewportSize({ width: 794, height: 1123 });
+    await page.goto(`file://${path.resolve(pdfPath)}`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1200); // tiempo para que el visor PDF renderice
+
+    // Obtener alto total del documento (puede abarcar varias páginas)
+    const totalHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+    const pageHeight = 1123;
+    const numPages = Math.max(1, Math.ceil(totalHeight / pageHeight));
+
+    for (let i = 0; i < numPages; i++) {
+      await page.evaluate(y => window.scrollTo(0, y), i * pageHeight);
+      await page.waitForTimeout(200);
+      const buffer = await page.screenshot({ type: 'png', clip: { x: 0, y: i * pageHeight, width: 794, height: Math.min(pageHeight, totalHeight - i * pageHeight) } });
+      const tmpPath = `${pdfPath}.page${i + 1}.png`;
+      fs.writeFileSync(tmpPath, buffer);
+      results.push(tmpPath);
+    }
+  } finally {
+    await page.close();
+  }
+  return results;
 }
 
 function buildReport(html, datos, fechaReport, fechaGeneracion, numSemana) {
