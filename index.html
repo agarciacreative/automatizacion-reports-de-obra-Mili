@@ -253,34 +253,13 @@
     font-weight: 300;
   }
 
-  /* PARTES PREVIEW */
+  /* PARTES PREVIEW — mismo grid que fotos */
   .partes-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.4rem;
     margin-top: 0.8rem;
   }
-  .parte-item {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.5rem 0.7rem;
-    background: var(--green-bg);
-    border: 1px solid rgba(59,109,17,0.2);
-    border-radius: 4px;
-    font-size: 0.8rem;
-    color: var(--green);
-    font-weight: 400;
-  }
-  .parte-item-remove {
-    margin-left: auto;
-    cursor: pointer;
-    color: var(--light);
-    font-size: 0.75rem;
-    line-height: 1;
-    transition: color 0.2s;
-  }
-  .parte-item-remove:hover { color: var(--red); }
 
   /* FOTOS GRID PREVIEW */
   .fotos-preview {
@@ -899,35 +878,35 @@
 
         <!-- ── UPLOADS: REPORT ── -->
         <div id="upload-report">
-          <div class="drop-section-title">Partes de obra (fotos del parte escrito)</div>
-          <div class="drop-zone" id="drop-partes">
+          <div class="drop-section-title">Partes de obra <span style="background:var(--navy);color:var(--cream);font-size:0.6rem;font-weight:600;letter-spacing:0.06em;padding:1px 6px;border-radius:3px;vertical-align:middle;margin-left:4px;">OCR</span></div>
+          <div class="drop-zone" id="drop-partes" style="border-color:var(--navy);background:var(--cream2);">
             <input type="file" accept="image/*" multiple onchange="addPartes(this.files)">
             <span class="drop-icon">📋</span>
-            <div class="drop-title">Arrastra los partes aquí</div>
-            <div class="drop-sub">Fotos de los partes escritos a mano de Domingo</div>
+            <div class="drop-title">Fotos de los <strong>partes escritos</strong></div>
+            <div class="drop-sub">La IA leerá el texto manuscrito de Domingo</div>
           </div>
           <div class="partes-list" id="partes-list"></div>
 
           <div class="divider"></div>
 
-          <div class="drop-section-title">Fotografías de obra</div>
+          <div class="drop-section-title">Fotografías de obra <span style="color:var(--light);font-weight:300;">(opcional)</span></div>
           <div class="drop-zone" id="drop-fotos">
             <input type="file" accept="image/*" multiple onchange="addFotos(this.files)">
             <span class="drop-icon">📷</span>
-            <div class="drop-title">Arrastra las fotos de obra</div>
-            <div class="drop-sub">Solo fotos del proceso — no los partes escritos</div>
+            <div class="drop-title">Fotos del <strong>proceso de obra</strong></div>
+            <div class="drop-sub">Solo del estado de la obra — no los partes escritos</div>
           </div>
           <div class="fotos-preview" id="fotos-preview"></div>
         </div>
 
         <!-- ── UPLOADS: ACTA ── -->
         <div id="upload-acta" style="display:none;">
-          <div class="drop-section-title">Apuntes de la reunión (manuscritos)</div>
-          <div class="drop-zone" id="drop-apuntes">
+          <div class="drop-section-title">Apuntes de la reunión <span style="background:var(--navy);color:var(--cream);font-size:0.6rem;font-weight:600;letter-spacing:0.06em;padding:1px 6px;border-radius:3px;vertical-align:middle;margin-left:4px;">OCR</span></div>
+          <div class="drop-zone" id="drop-apuntes" style="border-color:var(--navy);background:var(--cream2);">
             <input type="file" accept="image/*" multiple onchange="addPartes(this.files)">
             <span class="drop-icon">📝</span>
-            <div class="drop-title">Arrastra los apuntes aquí</div>
-            <div class="drop-sub">La IA leerá los apuntes y extraerá toda la información</div>
+            <div class="drop-title">Fotos de los <strong>apuntes manuscritos</strong></div>
+            <div class="drop-sub">La IA leerá el texto y extraerá toda la información</div>
           </div>
           <div class="partes-list" id="apuntes-list"></div>
 
@@ -1736,12 +1715,12 @@
   function renderPartes() {
     const isActa = document.querySelector('input[name="tipo-doc"]:checked').value === 'acta';
     const listId = isActa ? 'apuntes-list' : 'partes-list';
-    const icon   = isActa ? '📝' : '📋';
     const list = document.getElementById(listId);
     if (!list) return;
-    list.innerHTML = partes.map((f, i) => `
-      <div class="parte-item">${icon} ${f.name}<span class="parte-item-remove" onclick="removeParte(${i})">✕</span></div>
-    `).join('');
+    list.innerHTML = partes.map((f, i) => {
+      const url = URL.createObjectURL(f);
+      return `<div class="foto-thumb"><img src="${url}" alt="${f.name}"><div class="foto-thumb-remove" onclick="removeParte(${i})">✕</div></div>`;
+    }).join('');
     document.getElementById('counter-partes').textContent = partes.length;
   }
 

@@ -10,7 +10,7 @@ Menciona los hitos más importantes de la semana y el estado general de avance.`
 
 async function generarResumen(trabajos, obraName, semana) {
   if (!trabajos || trabajos.length === 0) {
-    return 'No se han podido extraer trabajos de los partes proporcionados para esta semana.';
+    return 'No se han podido extraer trabajos de los partes. Comprueba que las imágenes subidas a la sección "Partes de obra" sean fotos claras de los partes escritos (no fotos de la obra).';
   }
 
   const trabajosTexto = trabajos
