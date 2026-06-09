@@ -67,6 +67,7 @@ function cleanJson(text) {
 async function extraerPartes(rutasImagenes) {
   const trabajosTodos = [];
   let confianzaGlobal = 'alta';
+  let semanaOcr = '';  // semana extraída del primer parte que la mencione
 
   for (const ruta of rutasImagenes) {
     const imageBuffer = fs.readFileSync(ruta);
@@ -108,6 +109,11 @@ async function extraerPartes(rutasImagenes) {
       const jsonStr = cleanJson(raw);
       const data = JSON.parse(jsonStr);
 
+      // Recoger semana del primer parte que la mencione
+      if (!semanaOcr && data.semana && data.semana.trim()) {
+        semanaOcr = data.semana.trim();
+      }
+
       if (data.trabajos && Array.isArray(data.trabajos)) {
         // Filtrar trabajos sin descripción (Claude a veces devuelve entradas vacías)
         const validos = data.trabajos.filter(t => t.descripcion && t.descripcion.trim().length > 3);
@@ -126,7 +132,7 @@ async function extraerPartes(rutasImagenes) {
   // Ordenar trabajos por fecha cronológicamente
   const sorted = sortTrabajoPorFecha(trabajosTodos);
 
-  return { trabajos: sorted, confianza: confianzaGlobal };
+  return { trabajos: sorted, confianza: confianzaGlobal, semana: semanaOcr };
 }
 
 const MES = { ene:1, feb:2, mar:3, abr:4, may:5, jun:6, jul:7, ago:8, sep:9, oct:10, nov:11, dic:12 };

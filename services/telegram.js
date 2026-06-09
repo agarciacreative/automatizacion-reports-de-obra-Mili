@@ -123,9 +123,10 @@ async function runPipelineReport(chatId, session) {
     await sendMsg(chatId, '⏳ <b>Generando el report…</b>\n\nEsto puede tardar un minuto.');
 
     await sendMsg(chatId, '🔍 Leyendo los partes…');
-    const { trabajos, confianza } = await extraerPartes(session.partes);
+    const { trabajos, confianza, semana: semanaOcr } = await extraerPartes(session.partes);
 
-    const semana = getSemanaActual();
+    // Usar la semana que dice el parte escrito; si no se lee, calcular desde hoy
+    const semana = semanaOcr || getSemanaActual();
     await sendMsg(chatId, '✍️ Redactando el resumen ejecutivo…');
     const resumen = await generarResumen(trabajos, session.obra, semana);
 
