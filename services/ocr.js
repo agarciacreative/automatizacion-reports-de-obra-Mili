@@ -14,6 +14,7 @@ Devuelve ÚNICAMENTE un JSON válido, sin texto adicional, sin explicaciones, si
 REGLAS COMUNES (aplican a ambos tipos):
 - NUNCA inventes datos. Si algo no se lee o no se menciona, usa "" o 0.
 - Si el documento contiene varios días, crea UNA entrada por día en el array "trabajos".
+- INCLUYE TODOS LOS DÍAS que aparezcan escritos en el documento, sin excepción y sin omitir ninguno, aunque la anotación de ese día sea muy breve (ej: "Festivo", "Lluvia, no se trabajó", "Sin actividad"). Un día con poco texto sigue siendo un día — nunca lo descartes por brevedad.
 - "confianza": "alta" si lees bien el texto, "media" si hay dudas en alguna parte, "baja" si apenas se entiende.
 
 REGLAS TIPO A (parte manuscrito):
@@ -76,7 +77,7 @@ async function extraerPartes(rutasImagenes) {
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
+      max_tokens: 4096,
       system: [
         {
           type: 'text',
@@ -94,7 +95,7 @@ async function extraerPartes(rutasImagenes) {
             },
             {
               type: 'text',
-              text: 'Extrae los datos de este documento (parte manuscrito o captura de mensaje). Devuelve solo el JSON, sin nada más.',
+              text: 'Extrae los datos de este documento (parte manuscrito o captura de mensaje). Incluye TODOS los días que aparezcan, incluso los más breves. Devuelve solo el JSON, sin nada más.',
             },
           ],
         },
@@ -105,27 +106,42 @@ async function extraerPartes(rutasImagenes) {
     if (!raw) { console.error('[OCR] Respuesta vacía de la API'); confianzaGlobal = 'baja'; continue; }
     if (process.env.NODE_ENV !== 'production') console.log('[OCR raw response]:', raw.slice(0, 300));
 
+    let data = null;
     try {
-      const jsonStr = cleanJson(raw);
-      const data = JSON.parse(jsonStr);
-
-      // Recoger semana del primer parte que la mencione
-      if (!semanaOcr && data.semana && data.semana.trim()) {
-        semanaOcr = data.semana.trim();
-      }
-
-      if (data.trabajos && Array.isArray(data.trabajos)) {
-        // Filtrar trabajos sin descripción (Claude a veces devuelve entradas vacías)
-        const validos = data.trabajos.filter(t => t.descripcion && t.descripcion.trim().length > 3);
-        trabajosTodos.push(...validos);
-
-        const confianzas = validos.map(t => t.confianza).filter(Boolean);
-        if (confianzas.includes('baja'))                      confianzaGlobal = 'baja';
-        else if (confianzas.includes('media') && confianzaGlobal !== 'baja') confianzaGlobal = 'media';
-      }
+      data = JSON.parse(cleanJson(raw));
     } catch (e) {
-      console.error('[OCR] Error parseando JSON:', e.message, '\nRaw:', raw.slice(0, 500));
-      confianzaGlobal = 'baja';
+      console.error('[OCR] Error parseando JSON, reintentando con corrección:', e.message, '\nRaw:', raw.slice(0, 500));
+      try {
+        const retry = await client.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 4096,
+          messages: [{
+            role: 'user',
+            content: `El siguiente texto debería ser un JSON válido pero tiene errores de formato (puede estar incompleto o cortado). Devuélveme ÚNICAMENTE el JSON corregido y válido, sin ningún texto adicional, sin bloques de código markdown. Si el JSON está cortado a mitad de un día, conserva los días completos anteriores y descarta solo el día incompleto del final:\n\n${raw}`,
+          }],
+        });
+        const raw2 = retry.content?.[0]?.text;
+        if (raw2) data = JSON.parse(cleanJson(raw2));
+      } catch (e2) {
+        console.error('[OCR] Reintento también falló:', e2.message);
+      }
+    }
+
+    if (!data) { confianzaGlobal = 'baja'; continue; }
+
+    // Recoger semana del primer parte que la mencione
+    if (!semanaOcr && data.semana && data.semana.trim()) {
+      semanaOcr = data.semana.trim();
+    }
+
+    if (data.trabajos && Array.isArray(data.trabajos)) {
+      // Filtrar solo entradas realmente vacías (Claude a veces devuelve descripcion: "")
+      const validos = data.trabajos.filter(t => t.descripcion && t.descripcion.trim().length > 0);
+      trabajosTodos.push(...validos);
+
+      const confianzas = validos.map(t => t.confianza).filter(Boolean);
+      if (confianzas.includes('baja'))                      confianzaGlobal = 'baja';
+      else if (confianzas.includes('media') && confianzaGlobal !== 'baja') confianzaGlobal = 'media';
     }
   }
 

@@ -237,6 +237,17 @@ async function showOptionalPrompt(chatId, session, text) {
   session.promptMsgId = sent?.message_id || null;
 }
 
+function extFromMime(mime) {
+  if (mime === 'image/png')  return 'png';
+  if (mime === 'image/gif')  return 'gif';
+  if (mime === 'image/webp') return 'webp';
+  return 'jpg';
+}
+
+function isImageDocument(doc) {
+  return !!doc && typeof doc.mime_type === 'string' && doc.mime_type.startsWith('image/');
+}
+
 async function handlePhoto(chatId, msg, session) {
   const validStates = [S.FOTOS_OBRA, S.PARTES, S.APUNTES, S.FOTOS_ACTA, S.PLANOS];
   if (!validStates.includes(session.state)) {
@@ -244,11 +255,15 @@ async function handlePhoto(chatId, msg, session) {
     return;
   }
 
-  const photo = msg.photo[msg.photo.length - 1];
-  const dest  = path.join(TMP_DIR, String(chatId), `${Date.now()}.jpg`);
+  // Telegram envía la imagen como msg.photo si va comprimida, o como
+  // msg.document (sin comprimir, "enviar como archivo") — ambas son válidas.
+  const isDoc  = !msg.photo && isImageDocument(msg.document);
+  const fileId = isDoc ? msg.document.file_id : msg.photo[msg.photo.length - 1].file_id;
+  const ext    = isDoc ? extFromMime(msg.document.mime_type) : 'jpg';
+  const dest   = path.join(TMP_DIR, String(chatId), `${Date.now()}.${ext}`);
 
   try {
-    await downloadPhoto(photo.file_id, dest);
+    await downloadPhoto(fileId, dest);
   } catch (err) {
     console.error('[Bot] Error descargando foto:', err.message);
     await sendMsg(chatId, '⚠️ No pude descargar la foto. Inténtalo de nuevo.');
@@ -512,8 +527,14 @@ async function handleUpdate(update) {
     return;
   }
 
-  if (msg.photo) {
+  if (msg.photo || isImageDocument(msg.document)) {
     await handlePhoto(chatId, msg, session);
+    return;
+  }
+
+  // Documento que no es imagen (PDF, etc.) — avisar en vez de ignorarlo en silencio
+  if (msg.document) {
+    await sendMsg(chatId, '⚠️ Ese archivo no es una imagen. Envíame fotos de los partes/apuntes.');
     return;
   }
 
@@ -569,4 +590,4 @@ function start() {
   poll();
 }
 
-module.exports = { start };
+module.exports = { start, isImageDocument, extFromMime };

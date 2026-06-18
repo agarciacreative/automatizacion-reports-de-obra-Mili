@@ -840,6 +840,11 @@
               <option value="Domingo" selected>Domingo — Jefe de obra</option>
             </select>
           </div>
+
+          <div class="form-group">
+            <label class="form-label">Estado actual de la obra</label>
+            <textarea class="form-input" id="estado-input" rows="2" placeholder="Ej: cimentación terminada, iniciando estructura…" oninput="updateEstado(this.value)"></textarea>
+          </div>
         </div>
 
         <div class="divider"></div>
@@ -1016,19 +1021,6 @@
           <div class="info-row"><span class="info-row-label">Partes</span><span class="info-row-val" id="info-partes">—</span></div>
           <div class="info-row"><span class="info-row-label">Fotos</span><span class="info-row-val" id="info-fotos">—</span></div>
           <div class="info-row"><span class="info-row-label">Estado OCR</span><span class="info-row-val"><span class="status-badge badge-ok">✓ Confianza alta</span></span></div>
-        </div>
-
-        <!-- EDITAR -->
-        <div class="info-card">
-          <div class="info-card-title">Ajustes rápidos</div>
-          <div class="edit-field">
-            <div class="edit-label">Estado de la obra</div>
-            <input class="edit-input" id="estado-input" placeholder="Describe el estado actual de la obra…" oninput="updateEstado(this.value)">
-          </div>
-          <div class="edit-field">
-            <div class="edit-label">Nota adicional</div>
-            <textarea class="edit-textarea" placeholder="Añadir observación opcional…"></textarea>
-          </div>
         </div>
 
         <!-- ACCIONES -->
@@ -1514,12 +1506,9 @@
           badge.className = 'status-badge ' + (conf === 'alta' ? 'badge-ok' : conf === 'media' ? 'badge-warn' : 'badge-warn');
           badge.textContent = conf === 'alta' ? '✓ Confianza alta' : conf === 'media' ? '⚠ Confianza media' : '⚠ Confianza baja';
         }
-        // Prefill estado si viene del backend
-        const estadoInput = document.getElementById('estado-input');
-        if (estadoInput && !estadoInput.value && jobResult.estado) {
-          estadoInput.value = jobResult.estado;
-          updateEstado(jobResult.estado);
-        }
+        // Sincronizar preview con el estado tal y como se envió al generar el PDF
+        // (mismo fallback que usa services/pdf.js si se deja vacío)
+        updateEstado(jobResult.estado || 'Obra en ejecución.');
       }
 
       // Fotos reales en preview
@@ -1635,6 +1624,7 @@
       formData.append('fechaInicio', document.getElementById('fecha-inicio').value || '');
       formData.append('fechaFin',    document.getElementById('fecha-fin').value    || '');
       formData.append('encargado',   document.getElementById('encargado').value    || '');
+      formData.append('estado',      document.getElementById('estado-input').value || '');
       formData.append('tipoDoc',     tipoDoc);
       partes.forEach(f => formData.append('partes',      f));
       fotos.forEach(f  => formData.append('fotos',       f));
