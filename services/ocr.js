@@ -167,24 +167,33 @@ function sortTrabajoPorFecha(trabajos) {
 
 const MESES_FULL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
+function parseFechaCorta(str) {
+  if (!str) return null;
+  const parts = str.trim().toLowerCase().split(/\s+/);
+  if (parts.length < 2) return null;
+  const dia = parseInt(parts[0], 10);
+  const mes = MES[parts[1].slice(0, 3)];
+  if (!dia || !mes) return null;
+  return { dia, mes };
+}
+
 // Los partes manuscritos rara vez dicen explícitamente "semana del X al Y",
 // pero cada trabajo trae su propia fecha — derivamos el rango real a partir
 // de esas fechas en vez de depender de un valor calculado o elegido a mano.
 function semanaFromTrabajos(trabajos, year) {
-  const validos = (trabajos || []).filter(t => parseFecha(t.fecha) !== 999);
-  if (validos.length === 0) return '';
+  const fechas = (trabajos || [])
+    .map(t => parseFechaCorta(t.fecha))
+    .filter(Boolean)
+    .sort((a, b) => (a.mes * 100 + a.dia) - (b.mes * 100 + b.dia));
 
-  const sorted  = sortTrabajoPorFecha(validos);
-  const partsOf = f => f.trim().toLowerCase().split(/\s+/);
-  const [diaIni, mIni] = partsOf(sorted[0].fecha);
-  const [diaFin, mFin] = partsOf(sorted[sorted.length - 1].fecha);
-  const mesIni = MES[mIni.slice(0, 3)];
-  const mesFin = MES[mFin.slice(0, 3)];
+  if (fechas.length === 0) return '';
 
-  if (mesIni === mesFin) {
-    return `${diaIni}–${diaFin} ${MESES_FULL[mesFin - 1]} ${year}`;
+  const first = fechas[0];
+  const last  = fechas[fechas.length - 1];
+  if (first.mes === last.mes) {
+    return `${first.dia}–${last.dia} ${MESES_FULL[last.mes - 1]} ${year}`;
   }
-  return `${diaIni} ${MESES_FULL[mesIni - 1]} – ${diaFin} ${MESES_FULL[mesFin - 1]} ${year}`;
+  return `${first.dia} ${MESES_FULL[first.mes - 1]} – ${last.dia} ${MESES_FULL[last.mes - 1]} ${year}`;
 }
 
 // ── ACTA OCR ──

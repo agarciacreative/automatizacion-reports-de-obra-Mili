@@ -125,9 +125,10 @@ async function runPipelineReport(chatId, session) {
     await sendMsg(chatId, '🔍 Leyendo los partes…');
     const { trabajos, confianza, semana: semanaOcr } = await extraerPartes(session.partes);
 
-    // Usar la semana que dice el parte escrito; si no se lee, derivarla de las
-    // fechas reales de los trabajos extraídos; solo como último recurso, hoy
-    const semana = semanaOcr || semanaFromTrabajos(trabajos, new Date().getFullYear()) || getSemanaActual();
+    // Priorizar la semana derivada de las fechas reales de los trabajos (dato más
+    // fiable); el campo "semana" libre del OCR es propenso a alucinarse cuando el
+    // parte no lo menciona explícitamente; "hoy" es solo el último recurso
+    const semana = semanaFromTrabajos(trabajos, new Date().getFullYear()) || semanaOcr || getSemanaActual();
     await sendMsg(chatId, '✍️ Redactando el resumen ejecutivo…');
     const resumen = await generarResumen(trabajos, session.obra, semana);
 

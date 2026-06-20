@@ -25,6 +25,14 @@ function run() {
   assert.strictEqual(semanaFromTrabajos([], 2026), '');
   assert.strictEqual(semanaFromTrabajos([{ fecha: '' }], 2026), '');
 
+  // Formato de fecha inesperado (sin espacio, mes no reconocido) -> nunca debe lanzar excepción
+  assert.doesNotThrow(() => semanaFromTrabajos([{ fecha: '25/05' }, { fecha: '26 mayonesa' }], 2026));
+  assert.strictEqual(semanaFromTrabajos([{ fecha: '25/05' }], 2026), '');
+
+  // Mezcla de fechas válidas e inválidas -> usa solo las válidas
+  const mezcla = [{ fecha: '25/05' }, { fecha: '26 may' }, { fecha: '27 may' }];
+  assert.strictEqual(semanaFromTrabajos(mezcla, 2026), '26–27 mayo 2026');
+
   console.log('PASS');
 }
 

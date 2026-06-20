@@ -125,10 +125,11 @@ async function processReport(jobId, data) {
     if (process.env.NODE_ENV !== 'production') console.log('\n[OCR] Resultado crudo:\n', JSON.stringify(ocr, null, 2));
   }
 
-  // Priorizar la semana que dice el propio parte escrito; si no la menciona
-  // explícitamente, derivarla de las fechas reales de los trabajos extraídos;
-  // el date-picker es solo el último recurso (puede no coincidir con partes antiguos)
-  const semana = semanaOcr || semanaFromTrabajos(trabajos, new Date().getFullYear()) || semanaForm;
+  // Priorizar la semana derivada de las fechas reales de los trabajos (dato más
+  // fiable, validado fecha a fecha); el campo "semana" libre que devuelve el OCR
+  // es propenso a alucinarse cuando el parte no lo menciona explícitamente, y el
+  // date-picker es solo el último recurso (puede no coincidir con partes antiguos)
+  const semana = semanaFromTrabajos(trabajos, new Date().getFullYear()) || semanaOcr || semanaForm;
 
   // Paso 2: extracción completada
   setStep(jobId, 2);
