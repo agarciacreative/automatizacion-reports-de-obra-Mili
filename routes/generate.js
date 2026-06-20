@@ -226,6 +226,9 @@ router.get('/download/:filename', (req, res) => {
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'Archivo no encontrado' });
   }
+  // El nombre del archivo es el mismo si se regenera la misma obra el mismo día —
+  // sin esto el navegador puede servir una versión cacheada y vieja del PDF
+  res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.setHeader('Content-Type', 'application/pdf');
   res.sendFile(filePath);
