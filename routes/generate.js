@@ -3,7 +3,7 @@ const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
 const crypto  = require('crypto');
-const { extraerPartes, extraerActa } = require('../services/ocr');
+const { extraerPartes, extraerActa, semanaFromTrabajos } = require('../services/ocr');
 const { generarResumen } = require('../services/summary');
 const { generarPDF }     = require('../services/pdf');
 
@@ -111,18 +111,24 @@ async function processJob(jobId, data) {
 }
 
 async function processReport(jobId, data) {
-  const semana = formatSemana(data.fechaInicio, data.fechaFin);
+  const semanaForm = formatSemana(data.fechaInicio, data.fechaFin);
 
   // Paso 1: OCR de partes
   setStep(jobId, 1);
-  let trabajos = [], confianza = 'alta';
+  let trabajos = [], confianza = 'alta', semanaOcr = '';
   if (data.partesPaths.length > 0) {
     const ocr = await extraerPartes(data.partesPaths);
     trabajos  = ocr.trabajos;
     confianza = ocr.confianza;
-    lastDebug = { timestamp: new Date().toISOString(), obra: data.obra, semana, ocr };
+    semanaOcr = ocr.semana;
+    lastDebug = { timestamp: new Date().toISOString(), obra: data.obra, semanaForm, ocr };
     if (process.env.NODE_ENV !== 'production') console.log('\n[OCR] Resultado crudo:\n', JSON.stringify(ocr, null, 2));
   }
+
+  // Priorizar la semana que dice el propio parte escrito; si no la menciona
+  // explícitamente, derivarla de las fechas reales de los trabajos extraídos;
+  // el date-picker es solo el último recurso (puede no coincidir con partes antiguos)
+  const semana = semanaOcr || semanaFromTrabajos(trabajos, new Date().getFullYear()) || semanaForm;
 
   // Paso 2: extracción completada
   setStep(jobId, 2);

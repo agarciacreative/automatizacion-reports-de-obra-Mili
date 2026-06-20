@@ -3,7 +3,7 @@ const axios = require('axios');
 const fs    = require('fs');
 const path  = require('path');
 
-const { extraerPartes, extraerActa } = require('./ocr');
+const { extraerPartes, extraerActa, semanaFromTrabajos } = require('./ocr');
 const { generarResumen } = require('./summary');
 const { generarPDF }     = require('./pdf');
 
@@ -125,8 +125,9 @@ async function runPipelineReport(chatId, session) {
     await sendMsg(chatId, '🔍 Leyendo los partes…');
     const { trabajos, confianza, semana: semanaOcr } = await extraerPartes(session.partes);
 
-    // Usar la semana que dice el parte escrito; si no se lee, calcular desde hoy
-    const semana = semanaOcr || getSemanaActual();
+    // Usar la semana que dice el parte escrito; si no se lee, derivarla de las
+    // fechas reales de los trabajos extraídos; solo como último recurso, hoy
+    const semana = semanaOcr || semanaFromTrabajos(trabajos, new Date().getFullYear()) || getSemanaActual();
     await sendMsg(chatId, '✍️ Redactando el resumen ejecutivo…');
     const resumen = await generarResumen(trabajos, session.obra, semana);
 
