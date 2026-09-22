@@ -145,7 +145,7 @@ No hay servidor dedicado. El backend es un **agente Claude orquestado por n8n** 
 | Componente | Tecnología | Coste estimado |
 |------------|------------|----------------|
 | Orquestador | n8n self-hosted | ~5 €/mes (Hetzner CX22) |
-| IA / agente | Claude API (claude-sonnet-4) | ~10–20 €/mes |
+| IA / agente | Claude API (claude-opus-5, OCR con salida estructurada) | ~10–20 €/mes |
 | Canal entrada | Telegram Bot API | gratuito |
 | Almacenamiento | Google Drive | incluido en Google Workspace |
 | **Total infraestructura** | | **~15–25 €/mes** |

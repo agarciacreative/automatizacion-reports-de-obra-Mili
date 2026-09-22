@@ -551,6 +551,21 @@
   .badge-ok { background: var(--green-bg); color: var(--green); }
   .badge-warn { background: var(--amber-bg); color: var(--amber); }
 
+  /* ── AVISOS OCR ── */
+  .ocr-avisos {
+    display: none;
+    margin-top: 0.6rem;
+    padding: 0.6rem 0.8rem;
+    background: var(--amber-bg);
+    border-left: 3px solid var(--amber);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  .ocr-avisos.visible { display: block; }
+  .ocr-avisos-title { font-weight: 600; color: var(--amber); margin-bottom: 0.3rem; }
+  .ocr-avisos ul { margin: 0; padding-left: 1rem; }
+  .ocr-avisos li { margin-bottom: 0.2rem; }
+
   .action-list { display: flex; flex-direction: column; gap: 0.5rem; }
   .action-btn {
     display: flex;
@@ -1021,6 +1036,10 @@
           <div class="info-row"><span class="info-row-label">Partes</span><span class="info-row-val" id="info-partes">—</span></div>
           <div class="info-row"><span class="info-row-label">Fotos</span><span class="info-row-val" id="info-fotos">—</span></div>
           <div class="info-row"><span class="info-row-label">Estado OCR</span><span class="info-row-val"><span class="status-badge badge-ok">✓ Confianza alta</span></span></div>
+          <div class="ocr-avisos" id="ocr-avisos">
+            <div class="ocr-avisos-title">⚠ Revisa antes de enviar</div>
+            <ul id="ocr-avisos-list"></ul>
+          </div>
         </div>
 
         <!-- ACCIONES -->
@@ -1506,6 +1525,7 @@
           badge.className = 'status-badge ' + (conf === 'alta' ? 'badge-ok' : conf === 'media' ? 'badge-warn' : 'badge-warn');
           badge.textContent = conf === 'alta' ? '✓ Confianza alta' : conf === 'media' ? '⚠ Confianza media' : '⚠ Confianza baja';
         }
+        renderAvisosOcr(jobResult.avisos);
         // Sincronizar preview con el estado tal y como se envió al generar el PDF
         // (mismo fallback que usa services/pdf.js si se deja vacío)
         updateEstado(jobResult.estado || 'Obra en ejecución.');
@@ -1748,6 +1768,20 @@
 
   function removePlano(i) { planos.splice(i, 1); renderPlanos(); }
 
+  function renderAvisosOcr(avisos) {
+    const box  = document.getElementById('ocr-avisos');
+    const list = document.getElementById('ocr-avisos-list');
+    if (!box || !list) return;
+    list.textContent = '';
+    const items = Array.isArray(avisos) ? avisos.filter(a => typeof a === 'string' && a.trim()) : [];
+    items.forEach(a => {
+      const li = document.createElement('li');
+      li.textContent = a;
+      list.appendChild(li);
+    });
+    box.classList.toggle('visible', items.length > 0);
+  }
+
   function renderTrabajosTable(trabajos) {
     const tbody = document.getElementById('rc-trabajos-body');
     if (!tbody) return;
@@ -1883,6 +1917,7 @@
     renderPartes(); renderFotos(); renderPlanos();
     document.getElementById('estado-input').value = '';
     document.getElementById('preview-estado').textContent = '—';
+    renderAvisosOcr([]);
     setDefaultDates();
     goTo(1);
   }

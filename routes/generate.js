@@ -115,12 +115,13 @@ async function processReport(jobId, data) {
 
   // Paso 1: OCR de partes
   setStep(jobId, 1);
-  let trabajos = [], confianza = 'alta', semanaOcr = '';
+  let trabajos = [], confianza = 'alta', semanaOcr = '', avisos = [];
   if (data.partesPaths.length > 0) {
     const ocr = await extraerPartes(data.partesPaths);
     trabajos  = ocr.trabajos;
     confianza = ocr.confianza;
     semanaOcr = ocr.semana;
+    avisos    = ocr.avisos || [];
     lastDebug = { timestamp: new Date().toISOString(), obra: data.obra, semanaForm, ocr };
     if (process.env.NODE_ENV !== 'production') console.log('\n[OCR] Resultado crudo:\n', JSON.stringify(ocr, null, 2));
   }
@@ -154,7 +155,7 @@ async function processReport(jobId, data) {
     step: 5, done: true, error: null,
     result: {
       obra: data.obra, semana, encargado: data.encargado, tipoDoc: 'report',
-      estado: data.estado || '', trabajos, resumen, confianza,
+      estado: data.estado || '', trabajos, resumen, confianza, avisos,
       numPartes: data.partesPaths.length, numFotos: data.fotosPaths.length,
       filename: pdf.filename,
     },

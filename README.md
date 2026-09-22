@@ -88,7 +88,7 @@ mili-reports/
 | Capa | Tecnología |
 |------|------------|
 | Frontend | HTML + CSS + JS vanilla |
-| IA / OCR | Claude API (claude-sonnet-4) con Vision |
+| IA / OCR | Claude API (claude-opus-5) con Vision y salida estructurada |
 | PDF | Playwright + Chromium |
 | Almacenamiento | Google Drive |
 | Notificaciones | Telegram Bot API |

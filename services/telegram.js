@@ -116,6 +116,24 @@ function getSemanaActual() {
 
 function plural(n, sin, plu) { return `${n} ${n === 1 ? sin : plu}`; }
 
+function escHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Telegram limita los mensajes a 4096 caracteres: se recorta la lista si hiciera falta
+function formatAvisos(avisos) {
+  const MAX = 3500;
+  let text = '⚠️ <b>Cosas que no se han podido leer bien:</b>\n';
+  let omitidos = 0;
+  for (const a of avisos) {
+    const linea = `• ${escHtml(a)}\n`;
+    if (text.length + linea.length > MAX) { omitidos++; continue; }
+    text += linea;
+  }
+  if (omitidos > 0) text += `… y ${omitidos} más\n`;
+  return text + '\nRevisa esos puntos en el PDF antes de enviarlo.';
+}
+
 // ── PIPELINE REPORT ──
 async function runPipelineReport(chatId, session) {
   session.state = S.PROCESSING;
@@ -123,7 +141,7 @@ async function runPipelineReport(chatId, session) {
     await sendMsg(chatId, '⏳ <b>Generando el report…</b>\n\nEsto puede tardar un minuto.');
 
     await sendMsg(chatId, '🔍 Leyendo los partes…');
-    const { trabajos, confianza, semana: semanaOcr } = await extraerPartes(session.partes);
+    const { trabajos, confianza, semana: semanaOcr, avisos } = await extraerPartes(session.partes);
 
     // Priorizar la semana derivada de las fechas reales de los trabajos (dato más
     // fiable); el campo "semana" libre del OCR es propenso a alucinarse cuando el
@@ -144,7 +162,13 @@ async function runPipelineReport(chatId, session) {
       : `⚠️ Confianza ${confianza} — revisa el report antes de enviarlo`;
 
     await sendDoc(chatId, pdf.path,
-      `📋 <b>Report semanal · ${session.obra}</b>\n${semana}\n\n${confTag}`);
+      `📋 <b>Report semanal · ${session.obra}</b>\n${semana}\n${plural(trabajos.length, 'día leído', 'días leídos')}\n\n${confTag}`);
+
+    // Lo que la IA no ha podido leer bien va en un mensaje aparte para que Mili
+    // sepa exactamente qué revisar en el PDF antes de enviarlo
+    if (avisos && avisos.length > 0) {
+      await sendMsg(chatId, formatAvisos(avisos));
+    }
 
     [...session.partes, ...session.fotosObra].forEach(p => { try { fs.unlinkSync(p); } catch {} });
     resetSession(chatId);
