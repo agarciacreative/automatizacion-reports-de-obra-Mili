@@ -1,5 +1,6 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const sharp = require('sharp');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -221,33 +222,93 @@ async function extraerParte(ruta, indice, total) {
   };
 }
 
+// Si la misma foto llega dos veces (reenvío, copia con otro nombre) se lee una sola vez
+function quitarImagenesRepetidas(rutas) {
+  const vistos = new Set();
+  const unicas = [];
+  let repetidas = 0;
+  for (const ruta of rutas) {
+    const hash = crypto.createHash('sha1').update(fs.readFileSync(ruta)).digest('hex');
+    if (vistos.has(hash)) { repetidas++; continue; }
+    vistos.add(hash);
+    unicas.push(ruta);
+  }
+  return { unicas, repetidas };
+}
+
+function normalizarTexto(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+// Dos fotos de la misma hoja producen el mismo día dos veces. Se unifican las
+// entradas con la misma fecha cuyo texto coincide (o una lectura contiene a la
+// otra), conservando la lectura más completa. Un mismo día con textos distintos
+// se mantiene como dos filas: puede ser un parte que continúa en otra hoja.
+function unificarDiasRepetidos(trabajos) {
+  const out = [];
+  let fusionados = 0;
+  for (const t of trabajos) {
+    const nt = normalizarTexto(t.descripcion);
+    const idx = t.fecha ? out.findIndex(o => {
+      if (o.fecha !== t.fecha) return false;
+      const no = normalizarTexto(o.descripcion);
+      if (!nt || !no) return true;            // una de las dos lecturas está vacía: mismo día
+      return no === nt || no.includes(nt) || nt.includes(no);
+    }) : -1;
+    if (idx === -1) { out.push(t); continue; }
+    fusionados++;
+    const o = out[idx];
+    const tMejor = t.descripcion.length > o.descripcion.length
+      || (t.descripcion.length === o.descripcion.length && (t.operarios || []).length > (o.operarios || []).length);
+    out[idx] = tMejor ? t : o;
+  }
+  return { trabajos: out, fusionados };
+}
+
 async function extraerPartes(rutasImagenes) {
+  const { unicas, repetidas } = quitarImagenesRepetidas(rutasImagenes);
+
   // Cada foto se lee en paralelo (una foto ilegible no bloquea a las demás y Mili
   // espera menos); el orden de salida se conserva
   const resultados = await Promise.all(
-    rutasImagenes.map((ruta, i) => extraerParte(ruta, i, rutasImagenes.length))
+    unicas.map((ruta, i) => extraerParte(ruta, i, unicas.length))
   );
 
-  const trabajosTodos = [];
-  const avisos = [];
+  const leidos = [];
+  const avisosLectura = [];
   let semanaOcr = '';
   let confianzaGlobal = 'alta';
 
   for (const r of resultados) {
     if (!semanaOcr && r.semana) semanaOcr = r.semana;
-    trabajosTodos.push(...r.trabajos);
-    avisos.push(...r.avisos);
+    leidos.push(...r.trabajos);
+    avisosLectura.push(...r.avisos);
     const confianzas = r.trabajos.map(t => t.confianza);
     if (confianzas.includes('baja')) confianzaGlobal = 'baja';
     else if (confianzas.includes('media') && confianzaGlobal !== 'baja') confianzaGlobal = 'media';
   }
 
+  const { trabajos: trabajosTodos, fusionados } = unificarDiasRepetidos(leidos);
+
   if (trabajosTodos.length === 0 && rutasImagenes.length > 0) {
     confianzaGlobal = 'baja';
-    avisos.push('No se ha encontrado ningún día de trabajo en los partes enviados. Comprueba que las fotos sean de los partes escritos y se lean bien.');
-  } else if (avisos.length > 0 && confianzaGlobal === 'alta') {
+    avisosLectura.push('No se ha encontrado ningún día de trabajo en los partes enviados. Comprueba que las fotos sean de los partes escritos y se lean bien.');
+  } else if (avisosLectura.length > 0 && confianzaGlobal === 'alta') {
     // Hay cosas que no se han leído bien: que el aviso sea visible en el badge
     confianzaGlobal = 'media';
+  }
+
+  // Notas informativas: no afectan a la confianza, pero Mili debe saberlo
+  const avisos = [...avisosLectura];
+  if (repetidas > 0) {
+    avisos.push(`${repetidas === 1 ? 'Una foto de parte estaba repetida' : repetidas + ' fotos de partes estaban repetidas'} y se ha leído una sola vez.`);
+  }
+  if (fusionados > 0) {
+    avisos.push(`${fusionados === 1 ? 'Un día aparecía repetido' : fusionados + ' días aparecían repetidos'} en los partes (misma fecha y mismo texto); se ha unificado para no duplicar filas.`);
   }
 
   return { trabajos: sortTrabajoPorFecha(trabajosTodos), confianza: confianzaGlobal, semana: semanaOcr, avisos };
