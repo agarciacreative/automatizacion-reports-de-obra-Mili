@@ -129,24 +129,16 @@ async function pdfToImages(pdfPath, browser) {
 function buildReport(html, datos, fechaReport, fechaGeneracion, numSemana) {
   // Filas de la tabla de trabajos
   const filas = (datos.trabajos || []).map((t, i) => {
+    // La columna "Op." muestra solo el número de personas que trabajaron ese día
     const ops = (t.operarios || []).filter(o => o.nombre && o.nombre.trim());
-    const horas = ops.reduce((s, o) => s + (Number(o.horas) || 0), 0);
-    const horasStr = horas > 0 ? ` · ${horas}h` : '';
-
-    let celdaOps;
-    if (ops.length > 0) {
-      const badges = ops.map((o, j) =>
-        `<span class="op-badge${j === 0 ? ' enc' : ''}">${escHtml(o.nombre)}</span>`
-      ).join('');
-      celdaOps = `${badges}<span class="op-sub">${ops.length} op.${horasStr}</span>`;
-    } else {
+    let numOp = ops.length;
+    if (numOp === 0) {
       // Sin nombres: si el parte da un número de personas en el texto ("3 op."), usarlo;
-      // si no, no inventar personal (antes se pintaba "Domingo · 1 op." en días festivos)
+      // si no, no inventar personal (días festivos, sin actividad…)
       const match = t.descripcion?.match(/(\d+)\s*(?:OP\b|OPERARIOS?|PERSONAS?)/i);
-      celdaOps = match
-        ? `<span class="op-sub">${parseInt(match[1], 10)} op.</span>`
-        : `<span class="op-sub">—</span>`;
+      numOp = match ? parseInt(match[1], 10) : 0;
     }
+    const celdaOps = numOp > 0 ? `${numOp} op.` : '—';
     return `<tr>
       <td class="td-num">${i + 1}</td>
       <td class="td-fecha">${escHtml(t.fecha || '—')}</td>

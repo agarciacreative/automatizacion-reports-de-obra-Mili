@@ -160,19 +160,8 @@
   }
   .td-fecha { width: 90px; font-size: 0.8rem; color: #7a7a72; font-weight: 500; }
   .td-descripcion { font-weight: 300; }
-  .td-operarios { width: 150px; font-size: 0.78rem; color: #5a5a52; }
-  .op-badge {
-    display: inline-block;
-    background: #e8e5df;
-    border-radius: 2px;
-    padding: 0.15rem 0.5rem;
-    font-size: 0.72rem;
-    font-weight: 500;
-    margin: 0.1rem 0.1rem 0.1rem 0;
-    white-space: nowrap;
-  }
-  .op-badge.enc { background: #1a1a18; color: #f5f3ef; }
-  .op-sub { font-size: 0.7rem; color: #9a9a8a; margin-top: 0.3rem; display: block; }
+  .th-op { text-align: right; }
+  .td-operarios { width: 60px; font-size: 0.85rem; color: #2a2a25; text-align: right; white-space: nowrap; }
 
   /* ── GRID FOTOS ── */
   .fotos-grid {
@@ -247,7 +236,7 @@
     <div class="obra-field-value">{{SEMANA_RANGO}}</div>
   </div>
   <div class="obra-field">
-    <div class="obra-field-label">Encargado</div>
+    <div class="obra-field-label">Jefe de obra</div>
     <div class="obra-field-value">{{ENCARGADO}}</div>
   </div>
 </div>
@@ -278,7 +267,7 @@
         <th></th>
         <th>Fecha</th>
         <th>Descripción</th>
-        <th>Operarios</th>
+        <th class="th-op">Op.</th>
       </tr>
     </thead>
     <tbody>
@@ -287,12 +276,7 @@
         <td class="td-num">1</td>
         <td class="td-fecha">{{FECHA}}</td>
         <td class="td-descripcion">{{DESCRIPCION}}</td>
-        <td class="td-operarios">
-          <span class="op-badge enc">{{ENCARGADO}}</span>
-          <span class="op-badge">{{OPERARIO_1}}</span>
-          <span class="op-badge">{{OPERARIO_2}}</span>
-          <span class="op-sub">{{NUM_OP}} op. · {{HORAS}}h</span>
-        </td>
+        <td class="td-operarios">{{NUM_OP}} op.</td>
       </tr>
     </tbody>
   </table>
