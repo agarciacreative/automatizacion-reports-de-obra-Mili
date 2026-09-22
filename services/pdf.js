@@ -130,27 +130,28 @@ function buildReport(html, datos, fechaReport, fechaGeneracion, numSemana) {
   // Filas de la tabla de trabajos
   const filas = (datos.trabajos || []).map((t, i) => {
     const ops = (t.operarios || []).filter(o => o.nombre && o.nombre.trim());
-    // Si no hay nombres, usar el encargado del formulario como referencia
-    const encargado = ops[0]?.nombre || datos.encargado || 'Domingo';
-    const otrosOps = ops.slice(1)
-      .map(o => `<span class="op-badge">${escHtml(o.nombre || '')}</span>`)
-      .join('');
-    // Intentar extraer número de operarios de la descripción si operarios está vacío
-    let numOp = ops.length;
-    if (numOp === 0) {
-      const match = t.descripcion?.match(/(\d+)\s*(?:OP|OPERARIO)/i);
-      numOp = match ? parseInt(match[1], 10) : 1;
-    }
     const horas = ops.reduce((s, o) => s + (Number(o.horas) || 0), 0);
     const horasStr = horas > 0 ? ` · ${horas}h` : '';
+
+    let celdaOps;
+    if (ops.length > 0) {
+      const badges = ops.map((o, j) =>
+        `<span class="op-badge${j === 0 ? ' enc' : ''}">${escHtml(o.nombre)}</span>`
+      ).join('');
+      celdaOps = `${badges}<span class="op-sub">${ops.length} op.${horasStr}</span>`;
+    } else {
+      // Sin nombres: si el parte da un número de personas en el texto ("3 op."), usarlo;
+      // si no, no inventar personal (antes se pintaba "Domingo · 1 op." en días festivos)
+      const match = t.descripcion?.match(/(\d+)\s*(?:OP\b|OPERARIOS?|PERSONAS?)/i);
+      celdaOps = match
+        ? `<span class="op-sub">${parseInt(match[1], 10)} op.</span>`
+        : `<span class="op-sub">—</span>`;
+    }
     return `<tr>
       <td class="td-num">${i + 1}</td>
       <td class="td-fecha">${escHtml(t.fecha || '—')}</td>
       <td class="td-descripcion">${escHtml(t.descripcion || '—')}</td>
-      <td class="td-operarios">
-        <span class="op-badge enc">${escHtml(encargado)}</span>${otrosOps}
-        <span class="op-sub">${numOp} op.${horasStr}</span>
-      </td>
+      <td class="td-operarios">${celdaOps}</td>
     </tr>`;
   }).join('');
 

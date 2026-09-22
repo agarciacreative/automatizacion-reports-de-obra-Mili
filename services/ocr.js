@@ -37,7 +37,13 @@ REGLAS COMUNES (aplican a ambos tipos):
 REGLAS TIPO A (parte manuscrito):
 - "fecha": exactamente el día y mes escritos, formato "DD MMM" (ej: "12 may", "3 jun"). "" si no hay fecha.
 - "descripcion": texto literal de los trabajos de ese día. Cópialo tal cual, completo, sin resumir ni añadir. Si el día tiene varias líneas o varios trabajos, inclúyelos todos separados por punto y coma.
-- "operarios": personas mencionadas en el parte. El primero siempre es el encargado.
+- "operarios": SOLO las personas que trabajaron ESE día. El primero siempre es el encargado.
+  · Muchos partes son una tabla con los nombres en filas (o columnas) y las horas de cada día en las casillas. Una casilla vacía, con "-" o con 0 significa que esa persona NO trabajó ese día: no la incluyas en ese día.
+  · No copies la lista completa de la plantilla en todos los días: cada día lleva únicamente a quienes tienen horas o trabajos anotados ese día.
+  · Si el parte solo da un número de personas ("3 op.", "4 personas") sin nombres, deja "operarios" vacío y conserva ese número dentro de "descripcion".
+  · No repitas un mismo nombre dos veces en el mismo día.
+- "horas": las horas de esa persona ese día tal como están escritas en el parte. 0 si el parte no indica horas.
+- Si no estás seguro de quién trabajó un día concreto (casillas borrosas, nombres cortados), dilo en "avisos" indicando el día.
 
 REGLAS TIPO B (captura de mensaje de texto):
 - "fecha": extráela del timestamp visible en la captura o del texto del mensaje, en formato "DD MMM". "" si no se ve.
@@ -180,6 +186,27 @@ async function pedirJson({ system, content, schema, maxTokens, contexto }) {
   throw new Error(`No se pudo leer ${contexto} (${ultimoError?.message || 'respuesta inválida'}). Prueba con una foto más nítida.`);
 }
 
+// Deja en cada día solo a quien realmente trabajó:
+//  - nombres vacíos o repetidos fuera
+//  - si ese día hay horas anotadas para alguien, quien figura con 0 h es una casilla
+//    vacía de la tabla (no trabajó) y no debe contar como personal
+function limpiarOperarios(lista) {
+  const vistos = new Set();
+  const ops = [];
+  for (const o of (Array.isArray(lista) ? lista : [])) {
+    const nombre = String(o?.nombre || '').trim();
+    if (!nombre) continue;
+    const clave = nombre.toLowerCase();
+    if (vistos.has(clave)) continue;
+    vistos.add(clave);
+    ops.push({ nombre, rol: o.rol || '', horas: Number(o.horas) || 0 });
+  }
+  const hayHoras = ops.some(o => o.horas > 0);
+  if (!hayHoras) return { operarios: ops, excluidos: 0 };
+  const conHoras = ops.filter(o => o.horas > 0);
+  return { operarios: conHoras, excluidos: ops.length - conHoras.length };
+}
+
 async function extraerParte(ruta, indice, total) {
   const contexto = total > 1 ? `el parte ${indice + 1} de ${total}` : 'el parte';
   const imagen = await prepararImagen(ruta);
@@ -199,6 +226,7 @@ async function extraerParte(ruta, indice, total) {
 
   const avisos = Array.isArray(data.avisos) ? data.avisos.filter(a => typeof a === 'string' && a.trim()) : [];
   const trabajos = [];
+  const sinHoras = [];
   for (const t of (Array.isArray(data.trabajos) ? data.trabajos : [])) {
     const fecha = (t.fecha || '').trim();
     const descripcion = (t.descripcion || '').trim();
@@ -206,12 +234,17 @@ async function extraerParte(ruta, indice, total) {
     if (!fecha && !descripcion) continue;
     // Día con fecha pero sin texto legible: se conserva y se avisa, nunca se pierde
     if (fecha && !descripcion) avisos.push(`Día ${fecha}: no se ha podido leer la descripción de los trabajos`);
+    const { operarios, excluidos } = limpiarOperarios(t.operarios);
+    if (excluidos > 0) sinHoras.push(`${fecha || 'día sin fecha'} (${excluidos})`);
     trabajos.push({
       fecha,
       descripcion,
-      operarios: Array.isArray(t.operarios) ? t.operarios : [],
+      operarios,
       confianza: t.confianza || 'media',
     });
+  }
+  if (sinHoras.length > 0) {
+    avisos.push(`Operarios con 0 horas excluidos del recuento en: ${sinHoras.join(', ')}. Comprueba que el parte no los tuviera como trabajando.`);
   }
 
   const prefijo = total > 1 ? `Parte ${indice + 1}: ` : '';

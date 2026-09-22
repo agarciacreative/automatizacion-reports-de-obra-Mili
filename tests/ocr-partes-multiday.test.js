@@ -9,6 +9,7 @@
 // 7) una negativa de la IA (stop_reason "refusal") lanza un error claro.
 // 8) la misma foto enviada dos veces se lee una sola vez.
 // 9-10) días repetidos entre fotos (misma fecha y texto) se unifican, conservando la lectura más completa.
+// 11) recuento de personal: en días con horas, quien tiene 0 h no cuenta; nombres repetidos/vacíos fuera.
 // La API de Anthropic se mockea por completo: no hace falta ANTHROPIC_API_KEY
 // ni gastar tokens reales.
 // Ejecutar: node tests/ocr-partes-multiday.test.js
@@ -165,6 +166,28 @@ async function main() {
   const r10 = await extraerPartes([tmpImg, tmpImg2]);
   assert.strictEqual(r10.trabajos.length, 1);
   assert.strictEqual(r10.trabajos[0].descripcion, 'Barandillas');
+
+  // Caso 11: recuento de personal por día. En un día con horas anotadas, quien tiene
+  // 0 h es una casilla vacía de la tabla (no trabajó) y no cuenta; nombres repetidos o
+  // vacíos tampoco. Sin horas en ningún operario, se conservan todos.
+  scriptedResponses = [json({
+    semana: '', obra: '', avisos: [],
+    trabajos: [
+      { fecha: '7 sep', confianza: 'alta', descripcion: 'Montar vigas', operarios: [
+        { nombre: 'Domingo', rol: 'encargado', horas: 8 }, { nombre: 'David', rol: 'oficial', horas: 8 },
+        { nombre: 'Paco', rol: 'oficial', horas: 0 }, { nombre: 'Jaime', rol: 'oficial', horas: 0 },
+        { nombre: 'David', rol: 'oficial', horas: 8 }, { nombre: '', rol: '', horas: 8 },
+      ] },
+      { fecha: '8 sep', confianza: 'alta', descripcion: 'Andamios', operarios: [
+        { nombre: 'Domingo', rol: 'encargado', horas: 0 }, { nombre: 'Brahim', rol: 'oficial', horas: 0 },
+      ] },
+    ],
+  })];
+  callIndex = 0;
+  const r11 = await extraerPartes([tmpImg]);
+  assert.deepStrictEqual(r11.trabajos[0].operarios.map(o => o.nombre), ['Domingo', 'David'], 'solo cuentan quienes tienen horas ese día');
+  assert.deepStrictEqual(r11.trabajos[1].operarios.map(o => o.nombre), ['Domingo', 'Brahim'], 'sin horas anotadas se conservan todos');
+  assert.ok(r11.avisos.some(a => /0 horas/.test(a) && /7 sep \(2\)/.test(a)), 'debe avisar de los excluidos por día');
 
   fs.unlinkSync(tmpImg);
   fs.unlinkSync(tmpImg2);

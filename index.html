@@ -1795,7 +1795,7 @@
         <td class="rc-td-num">${i + 1}</td>
         <td class="rc-td-fecha">${t.fecha || '—'}</td>
         <td>${t.descripcion || '—'}</td>
-        <td>${numOps} op.</td>
+        <td>${numOps > 0 ? numOps + ' op.' : '—'}</td>
       </tr>`;
     }).join('');
   }
